@@ -230,7 +230,9 @@
             font-size: 0.95rem;
         }
 
-        tr:hover td { background: rgba(255, 255, 255, 0.02); }
+        tr { transition: all 0.2s; cursor: pointer; }
+        tr:hover td { background: var(--glass) !important; color: var(--primary-light); }
+        tr:active { transform: scale(0.995); }
 
         .badge {
             padding: 4px 10px;
@@ -751,11 +753,10 @@
                 document.getElementById('sw-shortname').value = v;
                 return;
             }
-            const last = p.pop();
-            // Format: A.B.C. Surname
-            const initials = p.map(x=>x[0].toUpperCase()+".").join("");
-            const surname = last.charAt(0).toUpperCase() + last.slice(1);
-            document.getElementById('sw-shortname').value = initials + " " + surname;
+            const surname = p.pop();
+            // Format: Initial. Surname (e.g., D. Yasandu)
+            const initials = p.map(x => x.charAt(0).toUpperCase() + ".").join("");
+            document.getElementById('sw-shortname').value = `${initials} ${surname.charAt(0).toUpperCase() + surname.slice(1)}`;
         }
         function autoAgeGroup(v) {
             const y = parseInt(v.split('/')[0]); if(isNaN(y)) return;
@@ -814,6 +815,8 @@
         function editSwimmer(id) {
             const s = state.swimmers.find(x => x.id == id);
             if(!s) return;
+            
+            // Populate basic info
             document.getElementById('sw-id').value = s.id;
             document.getElementById('sw-fullname').value = s.full || s.short;
             document.getElementById('sw-shortname').value = s.short;
@@ -822,16 +825,22 @@
             document.getElementById('sw-school').value = s.school;
             document.getElementById('sw-agegroup').value = s.age;
             
-            // Fill events
-            for(let i=1; i<=3; i++) {
-                const ev = s.evs[i-1];
-                document.getElementById(`sw-ev-${i}`).value = ev ? ev.no : "";
-                document.getElementById(`sw-time-${i}`).value = ev ? ev.t : "";
-            }
+            // Re-trigger auto-fills
+            autoFillZonal(s.school);
+            filterAvailableEvents();
+            
+            // Now fill events
+            setTimeout(() => {
+                for(let i=1; i<=3; i++) {
+                    const ev = s.evs[i-1];
+                    const sel = document.getElementById(`sw-ev-${i}`);
+                    if(sel) sel.value = ev ? ev.no : "";
+                    const timeInp = document.getElementById(`sw-time-${i}`);
+                    if(timeInp) timeInp.value = ev ? ev.t : "";
+                }
+            }, 10);
             
             document.getElementById('btn-sw-save').innerText = "Update Swimmer";
-            filterAvailableEvents();
-            // Scroll to form
             document.querySelector('#swimmers .card').scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -851,7 +860,7 @@
         function renderSwimmers() {
             document.getElementById('swimmer-table-body').innerHTML = state.swimmers.map(s => `
                 <tr onclick="editSwimmer(${s.id})" style="cursor:pointer">
-                    <td>${s.short}</td>
+                    <td>${s.short || s.full}</td>
                     <td>${s.school}</td>
                     <td>${s.age}</td>
                     <td>${s.evs.map(x=>x.no).join(', ')}</td>
@@ -872,8 +881,6 @@
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             
             // HY-TEK Style Lane Seeding
-            // First, sort by seed time (slowest to fastest or fastest to slowest based on event type)
-            // Typically fastest in earlier heats for timed finals, or slowest first? Usually fastest in center.
             let sorted = swimmers.sort((a,b) => tToSec(a.evs.find(x=>x.no===no).t) - tToSec(b.evs.find(x=>x.no===no).t));
             
             const laneConfig = state.settings.lanes === 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
@@ -896,7 +903,6 @@
             for(let h=1; h<=heatsCount; h++) {
                 let heatList = sorted.slice((h-1)*chunk, h*chunk);
                 let laneData = {};
-                // Reverse seed for each heat so fastest is at center
                 heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
 
                 html += `<div class="hytek-heat-label printable">Heat ${h} of ${heatsCount} Finals</div>
@@ -964,7 +970,7 @@
         function renderResultEntry(no) {
             no = parseInt(no); if(!no) return;
             const list = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
-            document.getElementById('result-entry-area').innerHTML = `<table>${list.map(s=>`<tr><td>${s.short}</td><td><input type="text" onblur="formatSeedTime(this)" class="r-inp" data-id="${s.id}"></td></tr>`).join('')}</table><button class="btn btn-primary" onclick="calcRes(${no})">Calculate</button>`;
+            document.getElementById('result-entry-area').innerHTML = `<table class="hytek-table">${list.map(s=>`<tr><td>${s.short}</td><td><input type="text" onblur="formatSeedTime(this)" class="r-inp" data-id="${s.id}" placeholder="MM:SS.ms"></td></tr>`).join('')}</table><button class="btn btn-primary" style="margin-top:1rem;" onclick="calcRes(${no})">Calculate & Save Results</button>`;
         }
         function calcRes(no) {
             const inps = document.querySelectorAll('.r-inp'); let rs = [];
@@ -972,7 +978,7 @@
             rs.sort((a,b)=>a.s-b.s); if(!state.results[no]) state.results[no] = {};
             const ptArr = state.events.find(e=>e.no===no).type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
             rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: idx < 8 ? ptArr[idx] : 0 });
-            saveData(); showToast("Saved");
+            saveData(); showToast("Results Saved Successfully");
         }
 
         function tToSec(t) { if(!t || t==='-') return 999999; const p = t.split(':').reverse(); let s = parseFloat(p[0]); if(p[1]) s+=p[1]*60; if(p[2]) s+=p[2]*3600; return s; }
@@ -981,16 +987,18 @@
             state.swimmers.forEach(s => { sPts[s.id] = 0; if(!schPts[s.school]) schPts[s.school] = { bi:0, gi:0, br:0, gr:0, total:0 }; });
             Object.keys(state.results).forEach(no => {
                 const ev = state.events.find(e=>e.no==no);
+                if(!ev) return;
                 Object.keys(state.results[no]).forEach(id => {
-                    let pts = state.results[no][id].pts; sPts[id]+=pts;
+                    let pts = state.results[no][id].pts; if(sPts[id] !== undefined) sPts[id]+=pts;
                     let sw = state.swimmers.find(x=>x.id==id); if(sw) {
                         let sc = schPts[sw.school]; if(ev.type==='relay') (sw.gender==='Boys'?sc.br+=pts:sc.gr+=pts); else (sw.gender==='Boys'?sc.bi+=pts:sc.gi+=pts);
                         sc.total+=pts;
                     }
                 });
             });
-            document.getElementById('stand-sw-boys').innerHTML = state.swimmers.filter(x=>x.gender==='Boys').map(x=>({s:x.short, p:sPts[x.id]})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
-            document.getElementById('stand-schools').innerHTML = Object.entries(schPts).sort((a,b)=>b[1].total-a[1].total).map(([n,d],i)=>`<tr><td>${i+1}</td><td>${n}</td><td>${d.bi}</td><td>${d.gi}</td><td>${d.br}</td><td>${d.gr}</td><td>${d.total}</td></tr>`).join('');
+            document.getElementById('stand-sw-boys').innerHTML = state.swimmers.filter(x=>x.gender==='Boys').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+            document.getElementById('stand-sw-girls').innerHTML = state.swimmers.filter(x=>x.gender==='Girls').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+            document.getElementById('stand-schools').innerHTML = Object.entries(schPts).sort((a,b)=>b[1].total-a[1].total).map(([n,d],i)=>`<tr><td>${i+1}</td><td>${n}</td><td>${d.bi + d.gi + d.br + d.gr}</td></tr>`).join('');
         }
 
         function populateDropdowns() {
@@ -1004,7 +1012,7 @@
         function saveSettings() {
             state.settings.meetName = document.getElementById('set-meet-name').value;
             state.settings.lanes = parseInt(document.getElementById('set-meet-lanes').value);
-            saveData(); showToast("Saved");
+            saveData(); showToast("Settings Saved");
         }
 
         function showToast(m) { const t = document.getElementById('toast'); t.innerText = m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'), 2000); }
@@ -1058,7 +1066,7 @@
             
             // 3. Swimmers (Simplified for data entry)
             const swData = state.swimmers.map(s => ({
-                FullName: s.short, // simplified
+                FullName: s.full,
                 School: s.school,
                 Gender: s.gender,
                 AgeGroup: s.age,
@@ -1072,7 +1080,7 @@
             const ws_sw = XLSX.utils.json_to_sheet(swData);
             XLSX.utils.book_append_sheet(wb, ws_sw, "Swimmers");
             
-            XLSX.writeFile(wb, "AquaFlow_MeetData.xlsx");
+            XLSX.writeFile(wb, `${state.settings.meetName}_Data.xlsx`);
             showToast("Excel Exported!");
         }
 
@@ -1091,7 +1099,7 @@
                 let importedEvents = null;
 
                 // Keywords for detection
-                const nameAliases = ['competitor name', 'swimmer name', 'full name', 'name', 'swimmer', 'fullname'];
+                const nameAliases = ['competitor name', 'swimmer name', 'full name', 'fullname', 'name', 'swimmer', 'student name'];
                 const schoolAliases = ['school name', 'school na', 'school/club', 'school', 'club', 'team', 'pasala', 'iskole'];
                 const eventKeywords = ['event', 'stroke', 'distance', 'ev', 'tm'];
                 const ageAliases = ['age group', 'age', 'group', 'category'];
@@ -1104,10 +1112,11 @@
                     if (rows.length === 0) continue;
 
                     let colMap = { evs: [], tms: [] };
+                    let lastEventIdx = -1;
                     let headerIndex = -1;
-                    let type = null; // 'swimmers', 'schools', 'events'
+                    let type = null;
 
-                    // Detect sheet type by scanning first 15 rows for headers
+                    // Scan first 15 rows for headers
                     for (let i = 0; i < Math.min(rows.length, 15); i++) {
                         const row = rows[i];
                         if (!row || row.length === 0) continue;
@@ -1117,12 +1126,12 @@
                             if (!cell) return;
                             const val = String(cell).toLowerCase().trim();
                             if (schoolAliases.some(a => val === a || val.includes(a))) score.s++;
-                            if (val === 'no' || val === 'no.' || val === 'ev no') score.e++;
+                            if (val === 'no' || val === 'no.' || val === 'ev no' || val.includes('event')) score.e++;
                             if (nameAliases.some(a => val === a || val.includes(a))) score.sw++;
                         });
 
-                        if (score.sw > 0 && (score.sw + score.s >= 2)) { type = 'swimmers'; headerIndex = i; }
-                        else if (score.e >= 1 && row.some(c => String(c).toLowerCase().includes('age'))) { type = 'events'; headerIndex = i; }
+                        if (score.sw > 0 || (score.s >= 1 && row.some(c => String(c).toLowerCase().includes('id')))) { type = 'swimmers'; headerIndex = i; }
+                        else if (score.e >= 1 && (row.some(c => String(c).toLowerCase().includes('age')) || row.some(c => String(row[0]).toLowerCase().includes('no')))) { type = 'events'; headerIndex = i; }
                         else if (score.s >= 1 && type !== 'swimmers') { type = 'schools'; headerIndex = i; }
                         
                         if (type) break;
@@ -1130,7 +1139,6 @@
 
                     if (!type) continue;
 
-                    // Parse Headers for the detected type
                     const headerRow = rows[headerIndex];
                     headerRow.forEach((cell, idx) => {
                         if (!cell) return;
@@ -1139,27 +1147,26 @@
                         if (type === 'swimmers') {
                             const schoolKeywords = ['school', 'college', 'vidyalaya', 'academy', 'institute', 'club', 'team', 'pasala', 'iskole', 'college', 'mahavidyalaya'];
                             let isSchData = schoolAliases.some(a => val === a || val.includes(a)) || schoolKeywords.some(k => val.includes(k));
-                            let isNameData = (nameAliases.some(a => val === a || val.includes(a)) || val.includes('fullname')) && !val.includes('school') && !val.includes('event') && !val.includes('stroke');
+                            let isNameData = (nameAliases.some(a => val === a || val.includes(a))) && !val.includes('school') && !val.includes('event') && !val.includes('stroke');
                             
-                            // Check values to be sure
-                            for (let j = headerIndex + 1; j < Math.min(rows.length, headerIndex + 5); j++) {
-                                if (rows[j] && rows[j][idx]) {
-                                    const cv = String(rows[j][idx]).toLowerCase();
-                                    if (schoolKeywords.some(k => cv.includes(k))) { isSchData = true; isNameData = false; break; }
-                                }
-                            }
-
                             if (isSchData) colMap.school = idx;
                             else if (isNameData) colMap.name = idx;
+                            else if (genderAliases.some(a => val === a || val.includes(a))) colMap.gender = idx;
+                            else if (ageAliases.some(a => val === a || val.includes(a))) colMap.age = idx;
+                            else if (dobAliases.some(a => val === a || val.includes(a))) colMap.dob = idx;
+                            else if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
                             
-                            if (genderAliases.some(a => val === a || val.includes(a))) colMap.gender = idx;
-                            if (ageAliases.some(a => val === a || val.includes(a))) colMap.age = idx;
-                            if (dobAliases.some(a => val === a || val.includes(a))) colMap.dob = idx;
-                            if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
-                            if (eventKeywords.some(k => val.includes(k)) && /\d/.test(val)) {
-                                const num = val.match(/\d+/)[0];
-                                if (val.includes('time') || val.includes('seed') || val.startsWith('t')) colMap.tms[num-1] = idx;
-                                else colMap.evs[num-1] = idx;
+                            // Event handling (supports Event 1, then Seed time, etc)
+                            if (eventKeywords.some(k => val.includes(k))) {
+                                const numMatch = val.match(/\d+/);
+                                if (numMatch) {
+                                    const num = parseInt(numMatch[0]);
+                                    if (val.includes('time') || val.includes('seed')) colMap.tms[num-1] = idx;
+                                    else { colMap.evs[num-1] = idx; lastEventIdx = num-1; }
+                                } else if (val.includes('time') || val.includes('seed')) {
+                                    // Fallback: If "Seed time" has no number, pair with last found event
+                                    if (lastEventIdx !== -1) colMap.tms[lastEventIdx] = idx;
+                                }
                             }
                         } else if (type === 'events') {
                             if (val.includes('no')) colMap.no = idx;
@@ -1172,12 +1179,20 @@
                         }
                     });
 
-                    // Process Rows
+                    // Fallback: if Name column wasn't explicitly found in Swimmers sheet
+                    if (type === 'swimmers' && colMap.name === undefined) {
+                        for(let c=0; c<headerRow.length; c++) {
+                            if (c !== colMap.school && c !== colMap.zone && c !== colMap.dob && !colMap.evs.includes(c) && !colMap.tms.includes(c)) {
+                                colMap.name = c; break;
+                            }
+                        }
+                    }
+
                     for (let i = headerIndex + 1; i < rows.length; i++) {
                         const row = rows[i];
-                        if (!row || row.length === 0) continue;
+                        if (!row || !row[colMap.name] && !row[colMap.school]) continue;
 
-                        if (type === 'swimmers' && row[colMap.name]) {
+                        if (type === 'swimmers') {
                             if (!importedSwimmers) importedSwimmers = [];
                             const schoolName = row[colMap.school] ? String(row[colMap.school]).trim() : "Unknown School";
                             const zoneName = row[colMap.zone] ? String(row[colMap.zone]).trim() : "";
@@ -1192,25 +1207,40 @@
                             let swEvs = [];
                             colMap.evs.forEach((cIdx, eIdx) => {
                                 if (row[cIdx]) {
-                                    let evNo = parseInt(row[cIdx]);
-                                    if (isNaN(evNo) && importedEvents) {
-                                        const m = importedEvents.find(e => e.name.toLowerCase().includes(String(row[cIdx]).toLowerCase()));
+                                    let evNo = parseInt(String(row[cIdx]).match(/\d+/) || []);
+                                    if (isNaN(evNo) || !evNo) {
+                                        const cleanVal = String(row[cIdx]).toLowerCase().replace(/[^a-z0-9]/g, '');
+                                        const allEvs = [...(importedEvents || []), ...(state.events || [])];
+                                        const m = allEvs.find(e => {
+                                            const eName = e.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+                                            return cleanVal.includes(eName) || eName.includes(cleanVal);
+                                        });
                                         if (m) evNo = m.no;
                                     }
                                     if (!isNaN(evNo)) swEvs.push({ no: evNo, t: String(row[colMap.tms[eIdx]] || "") });
                                 }
                             });
 
-                            const fullName = String(row[colMap.name]).trim();
-                            const p = fullName.split(/\s+/);
-                            const lastNick = p.length < 2 ? fullName : p.map(x=>x[0].toUpperCase()+".").join("").slice(0,-3)+"." + " " + p[p.length-1];
+                            const fullName = String(row[colMap.name] || "").trim() || "Unknown Swimmer";
+                            const swId = Math.floor(Date.now() + Math.random() * 1000);
+                            
+                            const parts = fullName.split(/\s+/);
+                            let shortName = fullName;
+                            if(parts.length >= 2) {
+                                const sur = parts.pop();
+                                shortName = parts.map(x=>x[0].toUpperCase()+".").join("") + " " + sur;
+                            }
 
-                            importedSwimmers.push({ id: Date.now() + Math.random(), full: fullName, short: "", dob: dobVal, school: schoolName, gender: String(row[colMap.gender] || "Boys"), age: String(row[colMap.age] || "Under 20"), evs: swEvs });
-                            // Re-gen short names
-                            const s = importedSwimmers[importedSwimmers.length-1];
-                            const parts = s.full.split(/\s+/);
-                            if(parts.length < 2) s.short = s.full;
-                            else { const sur = parts.pop(); s.short = parts.map(x=>x[0].toUpperCase()+".").join("") + " " + sur; }
+                            importedSwimmers.push({ 
+                                id: swId, 
+                                full: fullName, 
+                                short: shortName, 
+                                dob: dobVal, 
+                                school: schoolName, 
+                                gender: String(row[colMap.gender] || "Boys"), 
+                                age: String(row[colMap.age] || "Under 20"), 
+                                evs: swEvs 
+                            });
                         } else if (type === 'events' && row[colMap.no]) {
                             if (!importedEvents) importedEvents = [];
                             importedEvents.push({ no: parseInt(row[colMap.no]), gender: String(row[colMap.gender]), age: String(row[colMap.age]), name: String(row[colMap.name]), type: String(row[colMap.name]).toLowerCase().includes('relay') ? 'relay' : 'indiv' });
@@ -1226,7 +1256,7 @@
                 if (importedSwimmers) state.swimmers = importedSwimmers;
 
                 await saveData();
-                alert("Import Complete! Schools: " + state.schools.length + ", Events: " + state.events.length + ", Swimmers: " + (state.swimmers.length));
+                alert(`Import Success!\nSwimmers: ${state.swimmers.length}\nSchools: ${state.schools.length}\nEvents: ${state.events.length}`);
                 location.reload();
             };
             reader.readAsArrayBuffer(file);
