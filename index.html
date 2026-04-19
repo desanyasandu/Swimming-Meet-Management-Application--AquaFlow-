@@ -427,7 +427,7 @@
             <header>
                 <div>
                     <h1>Main Settings</h1>
-                    <p class="subtitle">Configure meat parameters and points system</p>
+                    <p class="subtitle">Configure meet parameters and points system</p>
                 </div>
                 <button class="btn btn-primary" onclick="saveSettings()">
                     <ion-icon name="save-outline"></ion-icon> Save Configuration
@@ -576,16 +576,16 @@
                     <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)"></div>
                     <div class="form-group"><label>Gender</label><select id="sw-gender" onchange="filterAvailableEvents()"><option>Boys</option><option>Girls</option></select></div>
                     <div class="form-group"><label>School</label><select id="sw-school" onchange="autoFillZonal(this.value)"></select></div>
-                    <div class="form-group"><label>Age Group</label><input type="text" id="sw-agegroup" readonly></div>
+                    <div class="form-group"><label>Age Group</label><select id="sw-agegroup" onchange="filterAvailableEvents()"><option value="">Select Age Group</option></select></div>
                     <input type="hidden" id="sw-zonal">
                     <input type="hidden" id="sw-id">
                 </div>
                 <hr style="margin:1.5rem 0; opacity:0.1">
                 <h3>Event Selection</h3>
                 <div class="grid">
-                    <div class="form-group"><label>Event 1</label><select class="sw-event-sel" id="sw-ev-1"></select><input type="text" class="seed-time-input" id="sw-time-1" onblur="formatSeedTime(this)"></div>
-                    <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2"></select><input type="text" class="seed-time-input" id="sw-time-2" onblur="formatSeedTime(this)"></div>
-                    <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3"></select><input type="text" class="seed-time-input" id="sw-time-3" onblur="formatSeedTime(this)"></div>
+                    <div class="form-group"><label>Event 1</label><select class="sw-event-sel" id="sw-ev-1" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-1" onblur="formatSeedTime(this)"></div>
+                    <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-2" onblur="formatSeedTime(this)"></div>
+                    <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-3" onblur="formatSeedTime(this)"></div>
                 </div>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
@@ -652,6 +652,7 @@
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             if(event && event.currentTarget) event.currentTarget.classList.add('active');
             if(id === 'leaderboard') calculateStandings();
+            if(id === 'swimmers') filterAvailableEvents();
             updateStats();
         }
 
@@ -710,6 +711,21 @@
                         }
                     }
                     renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns();
+                    // One-time fix for existing swimmers with incorrect age groups
+                    let fixed = false;
+                    state.swimmers.forEach(s => {
+                        if (s.dob) {
+                            const m = s.dob.match(/\d{4}/);
+                            if (m) {
+                                const y = parseInt(m[0]);
+                                const age = 2026 - y;
+                                let g = "Under 20";
+                                if(age < 12) g = "Under 12"; else if(age < 14) g = "Under 14"; else if(age < 16) g = "Under 16"; else if(age < 18) g = "Under 18";
+                                if(s.age !== g) { s.age = g; fixed = true; }
+                            }
+                        }
+                    });
+                    if(fixed) { saveData(); renderSwimmers(); }
                 };
             } catch (err) { 
                 console.error("Load error:", err);
@@ -759,16 +775,71 @@
             document.getElementById('sw-shortname').value = `${initials} ${surname.charAt(0).toUpperCase() + surname.slice(1)}`;
         }
         function autoAgeGroup(v) {
-            const y = parseInt(v.split('/')[0]); if(isNaN(y)) return;
+            if(!v) return;
+            // Find 4-digit year anywhere in the string
+            const match = v.match(/\d{4}/);
+            if(!match) return;
+            const y = parseInt(match[0]);
             const age = 2026 - y;
             let g = "Under 20";
-            if(age < 12) g = "Under 12"; else if(age < 14) g = "Under 14"; else if(age < 16) g = "Under 16"; else if(age < 18) g = "Under 18";
-            document.getElementById('sw-agegroup').value = g; filterAvailableEvents();
+            
+            // Age Group Boundaries
+            if(age < 12) g = "Under 12"; 
+            else if(age < 14) g = "Under 14"; 
+            else if(age < 16) g = "Under 16"; 
+            else if(age < 18) g = "Under 18";
+            else g = "Under 20";
+            
+            const sel = document.getElementById('sw-agegroup');
+            // Ensure the age group exists as an option
+            if(![...sel.options].some(o => o.value === g)) {
+                const opt = document.createElement('option');
+                opt.value = g; opt.innerText = g;
+                sel.appendChild(opt);
+            }
+            sel.value = g;
+            filterAvailableEvents();
         }
         function filterAvailableEvents() {
-            const g = document.getElementById('sw-gender').value, a = document.getElementById('sw-agegroup').value;
-            const f = state.events.filter(e => e.gender === g && e.age === a && e.type === 'indiv');
-            for(let i=1; i<=3; i++) document.getElementById(`sw-ev-${i}`).innerHTML = '<option value="">Select</option>' + f.map(x=>`<option value="${x.no}">${x.no} - ${x.name}</option>`).join('');
+            const g = document.getElementById('sw-gender').value;
+            const a = document.getElementById('sw-agegroup').value;
+            
+            // Current selections
+            let s1 = document.getElementById('sw-ev-1').value;
+            let s2 = document.getElementById('sw-ev-2').value;
+            let s3 = document.getElementById('sw-ev-3').value;
+
+            // PREVENT DUPLICATES BEFORE POPULATING
+            if (s2 && s2 === s1) { s2 = ""; document.getElementById('sw-ev-2').value = ""; }
+            if (s3 && (s3 === s1 || s3 === s2)) { s3 = ""; document.getElementById('sw-ev-3').value = ""; }
+
+            // Base list filtered by gender
+            const baseEvents = state.events.filter(e => {
+                const eg = String(e.gender || "").toLowerCase().trim();
+                const ug = g.toLowerCase().trim();
+                const matchGender = (eg === ug || (ug === 'boys' && (eg === 'male' || eg === 'm')) || (ug === 'girls' && (eg === 'female' || eg === 'f')));
+                
+                const ea = String(e.age || "").toLowerCase().trim();
+                const ua = a.toLowerCase().trim();
+                const matchAge = (!a || ea === ua);
+                return matchGender && matchAge;
+            });
+
+            // Helper to populate a dropdown
+            const populate = (id, currentVal, others) => {
+                const sel = document.getElementById(id);
+                // Filter: exclude events selected in others
+                const filtered = baseEvents.filter(e => !others.includes(String(e.no)));
+                
+                let html = '<option value="">Select</option>';
+                html += filtered.map(x => `<option value="${x.no}">${x.no} - ${x.name} (${x.age})</option>`).join('');
+                sel.innerHTML = html;
+                sel.value = currentVal;
+            };
+
+            populate('sw-ev-1', s1, [s2, s3]);
+            populate('sw-ev-2', s2, [s1, s3]);
+            populate('sw-ev-3', s3, [s1, s2]);
         }
         function autoFillZonal(v) {
             const s = state.schools.find(x=>x.name===v);
@@ -798,7 +869,13 @@
             };
             for(let i=1; i<=3; i++) { 
                 let en = document.getElementById(`sw-ev-${i}`).value, t = document.getElementById(`sw-time-${i}`).value; 
-                if(en) s.evs.push({no:parseInt(en), t}); 
+                if(en) {
+                    const evNo = parseInt(en);
+                    // Prevent duplicate events in the same record
+                    if(!s.evs.some(x => x.no === evNo)) {
+                        s.evs.push({no: evNo, t});
+                    }
+                }
             }
             
             if(id) {
@@ -827,7 +904,8 @@
             
             // Re-trigger auto-fills
             autoFillZonal(s.school);
-            filterAvailableEvents();
+            // Re-calculate age group fresh from DOB
+            autoAgeGroup(s.dob);
             
             // Now fill events
             setTimeout(() => {
@@ -855,6 +933,7 @@
                 document.getElementById(`sw-time-${i}`).value = "";
             }
             document.getElementById('btn-sw-save').innerText = "Register Swimmer";
+            filterAvailableEvents();
         }
 
         function renderSwimmers() {
@@ -1003,10 +1082,24 @@
 
         function populateDropdowns() {
             const sch = state.schools.map(s=>`<option>${s.name}</option>`).join(''); document.getElementById('sw-school').innerHTML = sch;
+            
+            // Standard age groups + unique ones from catalog
+            const stdAges = ["Under 12", "Under 14", "Under 16", "Under 18", "Under 20"];
+            const catalogAges = state.events.map(e => e.age);
+            const ages = [...new Set([...stdAges, ...catalogAges])].sort((a,b) => {
+                const getNum = x => parseInt(x.match(/\d+/) || 99);
+                return getNum(a) - getNum(b);
+            });
+
+            const ageOpts = ages.map(a => `<option value="${a}">${a}</option>`).join('');
+            document.getElementById('sw-agegroup').innerHTML = '<option value="">Select Age Group</option>' + ageOpts;
+
             const evs = state.events.map(e=>`<option value="${e.no}">${e.no} - ${e.name}</option>`).join('');
             document.getElementById('seed-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
             document.getElementById('result-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
             document.getElementById('report-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
+            
+            filterAvailableEvents();
         }
 
         function saveSettings() {
@@ -1224,6 +1317,21 @@
                             const fullName = String(row[colMap.name] || "").trim() || "Unknown Swimmer";
                             const swId = Math.floor(Date.now() + Math.random() * 1000);
                             
+                            // Auto-calculate age group from DOB if not provided or set to default
+                            let ageVal = String(row[colMap.age] || "Under 20").trim();
+                            if(dobVal && (ageVal === "Under 20" || !ageVal)) {
+                                const yrMatch = String(dobVal).match(/\d{4}/);
+                                if(yrMatch) {
+                                    const y = parseInt(yrMatch[0]);
+                                    const age = 2026 - y;
+                                    if(age < 12) ageVal = "Under 12";
+                                    else if(age < 14) ageVal = "Under 14";
+                                    else if(age < 16) ageVal = "Under 16";
+                                    else if(age < 18) ageVal = "Under 18";
+                                    else ageVal = "Under 20";
+                                }
+                            }
+
                             const parts = fullName.split(/\s+/);
                             let shortName = fullName;
                             if(parts.length >= 2) {
@@ -1238,7 +1346,7 @@
                                 dob: dobVal, 
                                 school: schoolName, 
                                 gender: String(row[colMap.gender] || "Boys"), 
-                                age: String(row[colMap.age] || "Under 20"), 
+                                age: ageVal, 
                                 evs: swEvs 
                             });
                         } else if (type === 'events' && row[colMap.no]) {
