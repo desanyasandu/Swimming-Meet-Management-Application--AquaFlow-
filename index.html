@@ -998,36 +998,58 @@
             reader.onload = async (e) => {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
-                const sheetName = workbook.SheetNames[0]; // Use first sheet
-                const sheet = workbook.Sheets[sheetName];
-                const rows = XLSX.utils.sheet_to_json(sheet, {header: 1}); // Get raw rows
                 
-                if(confirm("This will overwrite your existing data. Do you want to continue?")) {
-                    try {
-                        let headerRowIndex = -1;
-                        let colMap = {};
+                let sheet = null;
+                let rows = [];
+                let headerRowIndex = -1;
+                let colMap = {};
+                
+                // Common keywords for headers
+                const nameAliases = ['competitor name', 'swimmer name', 'full name', 'name', 'swimmer'];
+                const genderAliases = ['gender', 'sex'];
+                const schoolAliases = ['school name', 'school na', 'school/club', 'school', 'club', 'team'];
+                const zoneAliases = ['zonal', 'zone', 'region', 'district'];
+                const ageAliases = ['age group', 'age', 'group', 'category'];
+                const dobAliases = ['date of birth', 'dob', 'birth date'];
 
-                        // Find the header row by searching for "Competitor Name"
-                        for(let i=0; i<rows.length; i++) {
-                            const row = rows[i];
-                            if(row && row.some(cell => cell && String(cell).toLowerCase().includes('competitor name'))) {
-                                headerRowIndex = i;
-                                row.forEach((cell, idx) => {
-                                    if(!cell) return;
-                                    const val = String(cell).toLowerCase();
-                                    if(val.includes('competitor name')) colMap.name = idx;
-                                    if(val.includes('gender')) colMap.gender = idx;
-                                    if(val.includes('school na')) colMap.school = idx;
-                                    if(val.includes('zonal')) colMap.zone = idx;
-                                    if(val.includes('age group')) colMap.age = idx;
-                                    if(val.includes('date of birth')) colMap.dob = idx;
-                                });
-                                break;
-                            }
+                // Iterate through all sheets to find the registration data
+                for (const name of workbook.SheetNames) {
+                    const currentSheet = workbook.Sheets[name];
+                    const currentRows = XLSX.utils.sheet_to_json(currentSheet, {header: 1});
+                    
+                    for(let i=0; i<Math.min(currentRows.length, 20); i++) {
+                        const row = currentRows[i];
+                        if(!row) continue;
+                        
+                        let foundName = false;
+                        let tempColMap = {};
+                        row.forEach((cell, idx) => {
+                            if(!cell) return;
+                            const val = String(cell).toLowerCase().trim();
+                            
+                            if(nameAliases.some(a => val === a || val.includes(a))) { tempColMap.name = idx; foundName = true; }
+                            if(genderAliases.some(a => val === a || val.includes(a))) tempColMap.gender = idx;
+                            if(schoolAliases.some(a => val === a || val.includes(a))) tempColMap.school = idx;
+                            if(zoneAliases.some(a => val === a || val.includes(a))) tempColMap.zone = idx;
+                            if(ageAliases.some(a => val === a || val.includes(a))) tempColMap.age = idx;
+                            if(dobAliases.some(a => val === a || val.includes(a))) tempColMap.dob = idx;
+                        });
+
+                        if(foundName) {
+                            sheet = currentSheet;
+                            rows = currentRows;
+                            headerRowIndex = i;
+                            colMap = tempColMap;
+                            break;
                         }
-
-                        if(headerRowIndex === -1) {
-                            alert("Could not find standard headers like 'Competitor Name'. Please check your Excel file format.");
+                    }
+                    if(sheet) break;
+                }
+                
+                if(confirm("This will overwrite your existing swimmers data. Do you want to continue?")) {
+                    try {
+                        if(!sheet || headerRowIndex === -1) {
+                            alert("Could not find required headers (like 'Name' or 'Competitor Name') in any sheet. Please check your Excel file format.");
                             return;
                         }
 
@@ -1048,7 +1070,7 @@
 
                             // Determine Gender
                             let genderRaw = String(row[colMap.gender] || "").trim().toLowerCase();
-                            let gender = genderRaw.startsWith('g') ? "Girls" : "Boys";
+                            let gender = (genderRaw.startsWith('g') || genderRaw.startsWith('f')) ? "Girls" : "Boys";
 
                             // Determine Age Group
                             let ageGroup = String(row[colMap.age] || "").trim();
