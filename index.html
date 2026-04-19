@@ -576,6 +576,7 @@
                     <div class="form-group"><label>School</label><select id="sw-school" onchange="autoFillZonal(this.value)"></select></div>
                     <div class="form-group"><label>Age Group</label><input type="text" id="sw-agegroup" readonly></div>
                     <input type="hidden" id="sw-zonal">
+                    <input type="hidden" id="sw-id">
                 </div>
                 <hr style="margin:1.5rem 0; opacity:0.1">
                 <h3>Event Selection</h3>
@@ -584,7 +585,11 @@
                     <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2"></select><input type="text" class="seed-time-input" id="sw-time-2" onblur="formatSeedTime(this)"></div>
                     <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3"></select><input type="text" class="seed-time-input" id="sw-time-3" onblur="formatSeedTime(this)"></div>
                 </div>
-                <button class="btn btn-primary" style="float:right" onclick="addSwimmer()">Register Swimmer</button>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <button class="btn btn-secondary" onclick="clearSwimmerForm()">Clear Form</button>
+                    <button class="btn btn-primary" id="btn-sw-save" onclick="addSwimmer()">Register Swimmer</button>
+                </div>
             </div>
             <div class="card"><div class="table-responsive"><table><thead><tr><th>Name</th><th>School</th><th>Group</th><th>Events</th></tr></thead><tbody id="swimmer-table-body"></tbody></table></div></div>
         </div>
@@ -742,9 +747,15 @@
 
         function autoShortName(v) {
             const p = v.trim().split(/\s+/);
-            if(p.length < 2) return;
+            if(p.length < 2) {
+                document.getElementById('sw-shortname').value = v;
+                return;
+            }
             const last = p.pop();
-            document.getElementById('sw-shortname').value = p.map(x=>x[0].toUpperCase()+".").join(" ") + " " + last;
+            // Format: A.B.C. Surname
+            const initials = p.map(x=>x[0].toUpperCase()+".").join("");
+            const surname = last.charAt(0).toUpperCase() + last.slice(1);
+            document.getElementById('sw-shortname').value = initials + " " + surname;
         }
         function autoAgeGroup(v) {
             const y = parseInt(v.split('/')[0]); if(isNaN(y)) return;
@@ -773,12 +784,86 @@
             i.value = v+":"+mm.padStart(2,'0')+":"+ss.padStart(2,'0')+"."+ms;
         }
         function addSwimmer() {
-            let s = { id: Date.now(), short: document.getElementById('sw-shortname').value, school: document.getElementById('sw-school').value, gender: document.getElementById('sw-gender').value, age: document.getElementById('sw-agegroup').value, evs: [] };
-            for(let i=1; i<=3; i++) { let en = document.getElementById(`sw-ev-${i}`).value, t = document.getElementById(`sw-time-${i}`).value; if(en) s.evs.push({no:parseInt(en), t}); }
-            state.swimmers.push(s); saveData(); renderSwimmers();
+            const id = document.getElementById('sw-id').value;
+            let s = { 
+                id: id ? parseFloat(id) : Date.now(), 
+                full: document.getElementById('sw-fullname').value,
+                short: document.getElementById('sw-shortname').value, 
+                dob: document.getElementById('sw-dob').value,
+                school: document.getElementById('sw-school').value, 
+                gender: document.getElementById('sw-gender').value, 
+                age: document.getElementById('sw-agegroup').value, 
+                evs: [] 
+            };
+            for(let i=1; i<=3; i++) { 
+                let en = document.getElementById(`sw-ev-${i}`).value, t = document.getElementById(`sw-time-${i}`).value; 
+                if(en) s.evs.push({no:parseInt(en), t}); 
+            }
+            
+            if(id) {
+                const idx = state.swimmers.findIndex(x => x.id == id);
+                if(idx !== -1) state.swimmers[idx] = s;
+            } else {
+                state.swimmers.push(s);
+            }
+            
+            saveData(); renderSwimmers(); clearSwimmerForm();
+            showToast(id ? "Swimmer Updated" : "Swimmer Registered");
         }
+
+        function editSwimmer(id) {
+            const s = state.swimmers.find(x => x.id == id);
+            if(!s) return;
+            document.getElementById('sw-id').value = s.id;
+            document.getElementById('sw-fullname').value = s.full || s.short;
+            document.getElementById('sw-shortname').value = s.short;
+            document.getElementById('sw-dob').value = s.dob || "";
+            document.getElementById('sw-gender').value = s.gender;
+            document.getElementById('sw-school').value = s.school;
+            document.getElementById('sw-agegroup').value = s.age;
+            
+            // Fill events
+            for(let i=1; i<=3; i++) {
+                const ev = s.evs[i-1];
+                document.getElementById(`sw-ev-${i}`).value = ev ? ev.no : "";
+                document.getElementById(`sw-time-${i}`).value = ev ? ev.t : "";
+            }
+            
+            document.getElementById('btn-sw-save').innerText = "Update Swimmer";
+            filterAvailableEvents();
+            // Scroll to form
+            document.querySelector('#swimmers .card').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function clearSwimmerForm() {
+            document.getElementById('sw-id').value = "";
+            document.getElementById('sw-fullname').value = "";
+            document.getElementById('sw-shortname').value = "";
+            document.getElementById('sw-dob').value = "";
+            document.getElementById('sw-agegroup').value = "";
+            for(let i=1; i<=3; i++) {
+                document.getElementById(`sw-ev-${i}`).value = "";
+                document.getElementById(`sw-time-${i}`).value = "";
+            }
+            document.getElementById('btn-sw-save').innerText = "Register Swimmer";
+        }
+
         function renderSwimmers() {
-            document.getElementById('swimmer-table-body').innerHTML = state.swimmers.map(s => `<tr><td>${s.short}</td><td>${s.school}</td><td>${s.age}</td><td>${s.evs.map(x=>x.no).join(',')}</td></tr>`).join('');
+            document.getElementById('swimmer-table-body').innerHTML = state.swimmers.map(s => `
+                <tr onclick="editSwimmer(${s.id})" style="cursor:pointer">
+                    <td>${s.short}</td>
+                    <td>${s.school}</td>
+                    <td>${s.age}</td>
+                    <td>${s.evs.map(x=>x.no).join(', ')}</td>
+                    <td><button class="btn-secondary" onclick="event.stopPropagation(); deleteSwimmer(${s.id})" style="padding:2px 8px; font-size:12px;">Delete</button></td>
+                </tr>`).join('');
+        }
+
+        function deleteSwimmer(id) {
+            if(confirm("Delete this swimmer?")) {
+                state.swimmers = state.swimmers.filter(x => x.id != id);
+                saveData(); renderSwimmers();
+            }
         }
 
         function renderSeeding(no) {
@@ -991,7 +1076,7 @@
             showToast("Excel Exported!");
         }
 
-        function importFromExcel(event) {
+        async function importFromExcel(event) {
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -999,126 +1084,150 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 
-                let sheet = null;
-                let rows = [];
-                let headerRowIndex = -1;
-                let colMap = {};
-                
-                // Common keywords for headers
-                const nameAliases = ['competitor name', 'swimmer name', 'full name', 'name', 'swimmer'];
-                const genderAliases = ['gender', 'sex'];
-                const schoolAliases = ['school name', 'school na', 'school/club', 'school', 'club', 'team'];
-                const zoneAliases = ['zonal', 'zone', 'region', 'district'];
+                if(!confirm("This will overwrite your existing data. Do you want to continue?")) return;
+
+                let importedSwimmers = null;
+                let importedSchools = [];
+                let importedEvents = null;
+
+                // Keywords for detection
+                const nameAliases = ['competitor name', 'swimmer name', 'full name', 'name', 'swimmer', 'fullname'];
+                const schoolAliases = ['school name', 'school na', 'school/club', 'school', 'club', 'team', 'pasala', 'iskole'];
+                const eventKeywords = ['event', 'stroke', 'distance', 'ev', 'tm'];
                 const ageAliases = ['age group', 'age', 'group', 'category'];
+                const genderAliases = ['gender', 'sex'];
+                const zoneAliases = ['zonal', 'zone', 'region', 'district'];
                 const dobAliases = ['date of birth', 'dob', 'birth date'];
 
-                // Iterate through all sheets to find the registration data
-                for (const name of workbook.SheetNames) {
-                    const currentSheet = workbook.Sheets[name];
-                    const currentRows = XLSX.utils.sheet_to_json(currentSheet, {header: 1});
-                    
-                    for(let i=0; i<Math.min(currentRows.length, 20); i++) {
-                        const row = currentRows[i];
-                        if(!row) continue;
-                        
-                        let foundName = false;
-                        let tempColMap = {};
-                        row.forEach((cell, idx) => {
-                            if(!cell) return;
+                for (const sheetName of workbook.SheetNames) {
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {header: 1});
+                    if (rows.length === 0) continue;
+
+                    let colMap = { evs: [], tms: [] };
+                    let headerIndex = -1;
+                    let type = null; // 'swimmers', 'schools', 'events'
+
+                    // Detect sheet type by scanning first 15 rows for headers
+                    for (let i = 0; i < Math.min(rows.length, 15); i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        let score = { s:0, e:0, sw:0 };
+                        row.forEach(cell => {
+                            if (!cell) return;
                             const val = String(cell).toLowerCase().trim();
-                            
-                            if(nameAliases.some(a => val === a || val.includes(a))) { tempColMap.name = idx; foundName = true; }
-                            if(genderAliases.some(a => val === a || val.includes(a))) tempColMap.gender = idx;
-                            if(schoolAliases.some(a => val === a || val.includes(a))) tempColMap.school = idx;
-                            if(zoneAliases.some(a => val === a || val.includes(a))) tempColMap.zone = idx;
-                            if(ageAliases.some(a => val === a || val.includes(a))) tempColMap.age = idx;
-                            if(dobAliases.some(a => val === a || val.includes(a))) tempColMap.dob = idx;
+                            if (schoolAliases.some(a => val === a || val.includes(a))) score.s++;
+                            if (val === 'no' || val === 'no.' || val === 'ev no') score.e++;
+                            if (nameAliases.some(a => val === a || val.includes(a))) score.sw++;
                         });
 
-                        if(foundName) {
-                            sheet = currentSheet;
-                            rows = currentRows;
-                            headerRowIndex = i;
-                            colMap = tempColMap;
-                            break;
-                        }
+                        if (score.sw > 0 && (score.sw + score.s >= 2)) { type = 'swimmers'; headerIndex = i; }
+                        else if (score.e >= 1 && row.some(c => String(c).toLowerCase().includes('age'))) { type = 'events'; headerIndex = i; }
+                        else if (score.s >= 1 && type !== 'swimmers') { type = 'schools'; headerIndex = i; }
+                        
+                        if (type) break;
                     }
-                    if(sheet) break;
-                }
-                
-                if(confirm("This will overwrite your existing swimmers data. Do you want to continue?")) {
-                    try {
-                        if(!sheet || headerRowIndex === -1) {
-                            alert("Could not find required headers (like 'Name' or 'Competitor Name') in any sheet. Please check your Excel file format.");
-                            return;
-                        }
 
-                        let newSwimmers = [];
-                        let newSchools = [...state.schools];
+                    if (!type) continue;
 
-                        for(let i = headerRowIndex + 1; i < rows.length; i++) {
-                            const row = rows[i];
-                            if(!row || !row[colMap.name]) continue; // Skip empty rows
-
-                            const schoolName = row[colMap.school] ? String(row[colMap.school]).trim() : "Unknown School";
-                            const zoneName = row[colMap.zone] ? String(row[colMap.zone]).trim() : "";
-
-                            // Add school if not exists
-                            if(!newSchools.find(s => s.name === schoolName)) {
-                                newSchools.push({ name: schoolName, zone: zoneName });
-                            }
-
-                            // Determine Gender
-                            let genderRaw = String(row[colMap.gender] || "").trim().toLowerCase();
-                            let gender = (genderRaw.startsWith('g') || genderRaw.startsWith('f')) ? "Girls" : "Boys";
-
-                            // Determine Age Group
-                            let ageGroup = String(row[colMap.age] || "").trim();
-                            if(!ageGroup || ageGroup === "") {
-                                // Try to calculate from DOB if age group is missing
-                                const dobVal = row[colMap.dob];
-                                if(dobVal) {
-                                    let year;
-                                    if(!isNaN(dobVal)) {
-                                         // Excel serial date to JS date
-                                         const date = new Date((dobVal - 25569) * 86400000);
-                                         year = date.getFullYear();
-                                    } else {
-                                        year = new Date(dobVal).getFullYear();
-                                    }
-
-                                    if(!isNaN(year)) {
-                                        const age = 2026 - year;
-                                        if(age < 12) ageGroup = "Under 12";
-                                        else if(age < 14) ageGroup = "Under 14";
-                                        else if(age < 16) ageGroup = "Under 16";
-                                        else if(age < 18) ageGroup = "Under 18";
-                                        else ageGroup = "Under 20";
-                                    }
+                    // Parse Headers for the detected type
+                    const headerRow = rows[headerIndex];
+                    headerRow.forEach((cell, idx) => {
+                        if (!cell) return;
+                        const val = String(cell).toLowerCase().trim();
+                        
+                        if (type === 'swimmers') {
+                            const schoolKeywords = ['school', 'college', 'vidyalaya', 'academy', 'institute', 'club', 'team', 'pasala', 'iskole', 'college', 'mahavidyalaya'];
+                            let isSchData = schoolAliases.some(a => val === a || val.includes(a)) || schoolKeywords.some(k => val.includes(k));
+                            let isNameData = (nameAliases.some(a => val === a || val.includes(a)) || val.includes('fullname')) && !val.includes('school') && !val.includes('event') && !val.includes('stroke');
+                            
+                            // Check values to be sure
+                            for (let j = headerIndex + 1; j < Math.min(rows.length, headerIndex + 5); j++) {
+                                if (rows[j] && rows[j][idx]) {
+                                    const cv = String(rows[j][idx]).toLowerCase();
+                                    if (schoolKeywords.some(k => cv.includes(k))) { isSchData = true; isNameData = false; break; }
                                 }
                             }
 
-                            newSwimmers.push({
-                                id: Date.now() + Math.random(),
-                                short: String(row[colMap.name]).trim(),
-                                school: schoolName,
-                                gender: gender,
-                                age: ageGroup || "Under 20",
-                                evs: [] 
-                            });
+                            if (isSchData) colMap.school = idx;
+                            else if (isNameData) colMap.name = idx;
+                            
+                            if (genderAliases.some(a => val === a || val.includes(a))) colMap.gender = idx;
+                            if (ageAliases.some(a => val === a || val.includes(a))) colMap.age = idx;
+                            if (dobAliases.some(a => val === a || val.includes(a))) colMap.dob = idx;
+                            if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
+                            if (eventKeywords.some(k => val.includes(k)) && /\d/.test(val)) {
+                                const num = val.match(/\d+/)[0];
+                                if (val.includes('time') || val.includes('seed') || val.startsWith('t')) colMap.tms[num-1] = idx;
+                                else colMap.evs[num-1] = idx;
+                            }
+                        } else if (type === 'events') {
+                            if (val.includes('no')) colMap.no = idx;
+                            if (val.includes('gender')) colMap.gender = idx;
+                            if (val.includes('age')) colMap.age = idx;
+                            if (val.includes('name')) colMap.name = idx;
+                        } else if (type === 'schools') {
+                            if (schoolAliases.some(a => val === a || val.includes(a))) colMap.name = idx;
+                            if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
                         }
+                    });
 
-                        state.schools = newSchools;
-                        state.swimmers = newSwimmers;
-                        
-                        await saveData();
-                        alert("Import successful! Loaded " + newSwimmers.length + " swimmers.");
-                        location.reload();
-                    } catch(err) {
-                        console.error(err);
-                        alert("An error occurred during import. Please check your file formatting.");
+                    // Process Rows
+                    for (let i = headerIndex + 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (!row || row.length === 0) continue;
+
+                        if (type === 'swimmers' && row[colMap.name]) {
+                            if (!importedSwimmers) importedSwimmers = [];
+                            const schoolName = row[colMap.school] ? String(row[colMap.school]).trim() : "Unknown School";
+                            const zoneName = row[colMap.zone] ? String(row[colMap.zone]).trim() : "";
+                            if (!importedSchools.find(s => s.name === schoolName)) importedSchools.push({ name: schoolName, zone: zoneName });
+
+                            let dobVal = row[colMap.dob] || "";
+                            if (dobVal && typeof dobVal === 'number') {
+                                const date = new Date((dobVal - 25569) * 86400000);
+                                dobVal = date.getFullYear() + "/" + (date.getMonth()+1) + "/" + date.getDate();
+                            }
+
+                            let swEvs = [];
+                            colMap.evs.forEach((cIdx, eIdx) => {
+                                if (row[cIdx]) {
+                                    let evNo = parseInt(row[cIdx]);
+                                    if (isNaN(evNo) && importedEvents) {
+                                        const m = importedEvents.find(e => e.name.toLowerCase().includes(String(row[cIdx]).toLowerCase()));
+                                        if (m) evNo = m.no;
+                                    }
+                                    if (!isNaN(evNo)) swEvs.push({ no: evNo, t: String(row[colMap.tms[eIdx]] || "") });
+                                }
+                            });
+
+                            const fullName = String(row[colMap.name]).trim();
+                            const p = fullName.split(/\s+/);
+                            const lastNick = p.length < 2 ? fullName : p.map(x=>x[0].toUpperCase()+".").join("").slice(0,-3)+"." + " " + p[p.length-1];
+
+                            importedSwimmers.push({ id: Date.now() + Math.random(), full: fullName, short: "", dob: dobVal, school: schoolName, gender: String(row[colMap.gender] || "Boys"), age: String(row[colMap.age] || "Under 20"), evs: swEvs });
+                            // Re-gen short names
+                            const s = importedSwimmers[importedSwimmers.length-1];
+                            const parts = s.full.split(/\s+/);
+                            if(parts.length < 2) s.short = s.full;
+                            else { const sur = parts.pop(); s.short = parts.map(x=>x[0].toUpperCase()+".").join("") + " " + sur; }
+                        } else if (type === 'events' && row[colMap.no]) {
+                            if (!importedEvents) importedEvents = [];
+                            importedEvents.push({ no: parseInt(row[colMap.no]), gender: String(row[colMap.gender]), age: String(row[colMap.age]), name: String(row[colMap.name]), type: String(row[colMap.name]).toLowerCase().includes('relay') ? 'relay' : 'indiv' });
+                        } else if (type === 'schools' && row[colMap.name]) {
+                            const name = String(row[colMap.name]).trim();
+                            if (!importedSchools.find(s => s.name === name)) importedSchools.push({ name: name, zone: String(row[colMap.zone] || "") });
+                        }
                     }
                 }
+
+                if (importedSchools.length > 0) state.schools = importedSchools;
+                if (importedEvents) state.events = importedEvents;
+                if (importedSwimmers) state.swimmers = importedSwimmers;
+
+                await saveData();
+                alert("Import Complete! Schools: " + state.schools.length + ", Events: " + state.events.length + ", Swimmers: " + (state.swimmers.length));
+                location.reload();
             };
             reader.readAsArrayBuffer(file);
         }
