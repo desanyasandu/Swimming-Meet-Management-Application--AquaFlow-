@@ -637,25 +637,68 @@
                 </div>
             </div>
         </div>
-
         <!-- RESULTS -->
-        <div id="results" class="content-container">
-            <header><div><h1>Result Entry</h1></div></header>
+        <div id="results" class="content-container section">
+            <div class="header"><h1>Result Entry</h1></div>
             <div class="card">
-                <select id="result-event-jump" onchange="renderResultEntry(this.value)"><option value="">Select Event</option></select>
-                <div id="result-entry-area" style="margin-top:2rem;"></div>
+                <div class="grid">
+                    <div class="form-group">
+                        <label>Gender Filter</label>
+                        <select id="res-f-gender" onchange="filterResultEvents()">
+                            <option value="">All</option>
+                            <option>Boys</option>
+                            <option>Girls</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Age Filter</label>
+                        <select id="res-f-age" onchange="filterResultEvents()">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:2;">
+                        <label>Select Event</label>
+                        <select id="result-event-jump" onchange="renderResultEntry(this.value)">
+                            <option value="">Select Event</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="result-entry-area" style="margin-top:1.5rem;"></div>
             </div>
         </div>
 
         <!-- STANDINGS -->
-        <div id="leaderboard" class="content-container">
-            <header class="no-print"><div><h1>Reports & Results</h1></div>
-                <div style="display:flex; gap:10px;">
-                    <select id="report-event-jump" onchange="renderResultsReport(this.value)"><option value="">Final Results (Select Event)</option></select>
-                    <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master Swimmer List</button>
-                    <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Report</button>
+        <div id="standings" class="content-container section">
+            <div class="header"><h1>Reports & Results</h1></div>
+            <div class="card">
+                <div class="grid" style="align-items: flex-end;">
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <select id="rpt-f-gender" onchange="filterReportEvents()">
+                            <option value="">All</option>
+                            <option>Boys</option>
+                            <option>Girls</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Age Group</label>
+                        <select id="rpt-f-age" onchange="filterReportEvents()">
+                            <option value="">All</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:2;">
+                        <label>Select Event (Reports)</label>
+                        <select id="report-event-jump" onchange="renderResultsReport(this.value)">
+                            <option value="">Select Event</option>
+                        </select>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master Swimmer List</button>
+                        <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Report</button>
+                    </div>
                 </div>
-            </header>
+            </div>
+            
             <div id="report-filters" class="card no-print" style="display:none; margin-bottom:1rem;">
                 <div class="grid" style="grid-template-columns: 1fr 1fr auto;">
                     <select id="f-gender" onchange="renderSwimmerMasterList()"><option value="">All Genders</option><option>Boys</option><option>Girls</option></select>
@@ -1404,13 +1447,53 @@
             document.getElementById('sw-agegroup').innerHTML = '<option value="">Select Age Group</option>' + ageOpts;
             document.getElementById('f-age').innerHTML = '<option value="">All Age Groups</option>' + ageOpts;
             document.getElementById('seed-f-age').innerHTML = '<option value="">All</option>' + ageOpts;
+            document.getElementById('res-f-age').innerHTML = '<option value="">All</option>' + ageOpts;
+            document.getElementById('rpt-f-age').innerHTML = '<option value="">All</option>' + ageOpts;
 
-            const evs = state.events.map(e=>`<option value="${e.no}">${e.no} - ${e.name}</option>`).join('');
-            document.getElementById('seed-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
-            document.getElementById('result-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
-            document.getElementById('report-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
+            filterSeedingEvents();
+            filterResultEvents();
+            filterReportEvents();
             
             filterAvailableEvents();
+        }
+
+        function filterSeedingEvents() {
+            const fg = document.getElementById('seed-f-gender').value;
+            const fa = document.getElementById('seed-f-age').value;
+            const filtered = state.events.filter(e => {
+                const eg = String(e.gender || "").toLowerCase();
+                const ug = (fg || "").toLowerCase();
+                const matchGender = (!fg || eg === ug || (ug === 'boys' && (eg === 'male' || eg === 'm')) || (ug === 'girls' && (eg === 'female' || eg === 'f')));
+                const matchAge = (!fa || e.age === fa);
+                return matchGender && matchAge;
+            });
+            document.getElementById('seed-event-jump').innerHTML = '<option value="">Select Event (Filtered)</option>' + filtered.map(e => `<option value="${e.no}">${e.no} - ${e.name} (${e.age})</option>`).join('');
+        }
+
+        function filterResultEvents() {
+            const fg = document.getElementById('res-f-gender').value;
+            const fa = document.getElementById('res-f-age').value;
+            const filtered = state.events.filter(e => {
+                const eg = String(e.gender || "").toLowerCase();
+                const ug = (fg || "").toLowerCase();
+                const matchGender = (!fg || eg === ug || (ug === 'boys' && (eg === 'male' || eg === 'm')) || (ug === 'girls' && (eg === 'female' || eg === 'f')));
+                const matchAge = (!fa || e.age === fa);
+                return matchGender && matchAge;
+            });
+            document.getElementById('result-event-jump').innerHTML = '<option value="">Select Event (Filtered)</option>' + filtered.map(e => `<option value="${e.no}">${e.no} - ${e.name} (${e.age})</option>`).join('');
+        }
+
+        function filterReportEvents() {
+            const fg = document.getElementById('rpt-f-gender').value;
+            const fa = document.getElementById('rpt-f-age').value;
+            const filtered = state.events.filter(e => {
+                const eg = String(e.gender || "").toLowerCase();
+                const ug = (fg || "").toLowerCase();
+                const matchGender = (!fg || eg === ug || (ug === 'boys' && (eg === 'male' || eg === 'm')) || (ug === 'girls' && (eg === 'female' || eg === 'f')));
+                const matchAge = (!fa || e.age === fa);
+                return matchGender && matchAge;
+            });
+            document.getElementById('report-event-jump').innerHTML = '<option value="">Select Event (Filtered)</option>' + filtered.map(e => `<option value="${e.no}">${e.no} - ${e.name} (${e.age})</option>`).join('');
         }
 
         function handleNameInput(v) {
