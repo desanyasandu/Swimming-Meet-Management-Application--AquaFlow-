@@ -288,7 +288,7 @@
         .toast.show { transform: translateY(0); }
 
         /* HY-TEK Report Styles */
-        .report-header { text-align: center; border-bottom: 2px solid black; margin-bottom: 10px; padding-bottom: 10px; color: black; }
+        .report-header { text-align: center; border-bottom: 2px solid var(--glass-border); margin-bottom: 10px; padding-bottom: 10px; color: var(--text-main); }
         .report-header h2 { font-size: 1.4rem; font-weight: 700; margin: 0; }
         .report-header p { font-size: 0.9rem; margin: 2px 0; }
 
@@ -304,18 +304,27 @@
             justify-content: space-between;
         }
 
-        .hytek-table { width: 100%; border-collapse: collapse; color: black; font-size: 0.9rem; }
+        .hytek-table { width: 100%; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem; }
         .hytek-table th { border-bottom: 1px solid black; text-align: left; padding: 4px; color: black; font-weight: 700; text-transform: none; background: transparent; }
         .hytek-table td { padding: 4px; border: none; }
         .hytek-heat-label { font-weight: 700; padding: 10px 0 5px 5px; color: black; border-bottom: 1px solid #ddd; }
 
         @media print {
-            body { background: white; color: black; }
-            .sidebar, .btn, .nav-link, header, .card:not(.printable), .toast, .no-print { display: none !important; }
-            .main-content { padding: 0; margin: 0; }
-            .content-container { display: block !important; padding: 0; }
-            .card { border: none; box-shadow: none; background: white; padding: 0; margin: 0; }
-            .hytek-table, .report-header, .hytek-event-title { color: black; }
+            @page { size: portrait; margin: 1cm; }
+            body { background: white; color: black; overflow: visible !important; }
+            .sidebar, .btn, .nav-link, .toast, .no-print, #clock { display: none !important; }
+            .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
+            .content-container { display: none !important; padding: 0 !important; margin: 0 !important; }
+            .content-container.active { display: block !important; }
+            .card { border: none !important; box-shadow: none !important; background: white !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+            .table-responsive { overflow: visible !important; border: none !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { color: black !important; border-bottom: 1px solid #ddd !important; -webkit-print-color-adjust: exact; }
+            .hytek-table { border: 1px solid black !important; font-size: 10pt !important; }
+            .hytek-table th { border-bottom: 1px solid black !important; padding: 6px 4px !important; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
+            .hytek-table td { padding: 4px !important; border: none !important; vertical-align: top !important; }
+            .report-header { margin-bottom: 20px !important; border-bottom: 2px solid black !important; padding-bottom: 10px !important; }
+            .hytek-event-title { background-color: #e0e0e0 !important; border: 1px solid black !important; -webkit-print-color-adjust: exact; }
             .printable { display: block !important; }
         }
     </style>
@@ -536,13 +545,17 @@
             <div class="grid">
                 <div class="card">
                     <h3>Add School</h3>
-                    <div class="form-group"><label>School Name</label><input type="text" id="sch-name"></div>
+                    <div class="form-group"><label>School Name</label><input type="text" id="sch-name" list="school-names-list"></div>
+                    <datalist id="school-names-list"></datalist>
                     <div class="form-group"><label>Zonal</label><input type="text" id="sch-zone"></div>
-                    <button class="btn btn-primary" style="width:100%;" onclick="addSchool()">Add School</button>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-primary" style="flex:2;" id="btn-sch-save" onclick="addSchool()">Add School</button>
+                        <button class="btn btn-secondary" style="flex:1;" onclick="clearSchoolForm()">Clear</button>
+                    </div>
                 </div>
                 <div class="card" style="grid-column: span 2;">
                     <div class="table-responsive">
-                        <table><thead><tr><th>Name</th><th>Zone</th><th>Action</th></tr></thead><tbody id="school-table-body"></tbody></table>
+                        <table><thead><tr><th>Name</th><th>Zone</th><th style="width:100px;">Action</th></tr></thead><tbody id="school-table-body"></tbody></table>
                     </div>
                 </div>
             </div>
@@ -552,15 +565,16 @@
         <div id="events" class="content-container">
             <header><div><h1>Event Catalog</h1></div><button class="btn btn-secondary" onclick="resetEventsToDefault()">Reset Defaults</button></header>
             <div class="card">
-                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 2fr auto; align-items: flex-end;">
-                    <input type="number" id="ev-no" placeholder="No">
-                    <select id="ev-gender"><option>Boys</option><option>Girls</option></select>
-                    <select id="ev-age"><option>Under 12</option><option>Under 14</option><option>Under 16</option><option>Under 18</option><option>Under 20</option></select>
-                    <input type="text" id="ev-name" placeholder="Event Name">
-                    <button class="btn btn-primary" onclick="addEvent()">Add</button>
+                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 2fr auto auto; align-items: flex-end; gap: 10px;">
+                    <div class="form-group" style="margin:0"><label>No</label><input type="number" id="ev-no" placeholder="No"></div>
+                    <div class="form-group" style="margin:0"><label>Gender</label><select id="ev-gender"><option>Boys</option><option>Girls</option></select></div>
+                    <div class="form-group" style="margin:0"><label>Age</label><select id="ev-age"><option>Under 12</option><option>Under 14</option><option>Under 16</option><option>Under 18</option><option>Under 20</option></select></div>
+                    <div class="form-group" style="margin:0"><label>Event Name</label><input type="text" id="ev-name" placeholder="Event Name"></div>
+                    <button class="btn btn-primary" id="btn-ev-save" onclick="addEvent()">Add</button>
+                    <button class="btn btn-secondary" onclick="clearEventForm()">Clear</button>
                 </div>
                 <div class="table-responsive" style="margin-top:1.5rem;">
-                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th>Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
+                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th style="width:100px;">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
                 </div>
             </div>
         </div>
@@ -571,7 +585,8 @@
             <div class="card">
                 <h3>Personal Information</h3>
                 <div class="grid">
-                    <div class="form-group"><label>Full Name</label><input type="text" id="sw-fullname" oninput="autoShortName(this.value)"></div>
+                    <div class="form-group"><label>Full Name</label><input type="text" id="sw-fullname" list="swimmer-names-list" oninput="handleNameInput(this.value)"></div>
+                    <datalist id="swimmer-names-list"></datalist>
                     <div class="form-group"><label>Short Name</label><input type="text" id="sw-shortname"></div>
                     <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)"></div>
                     <div class="form-group"><label>Gender</label><select id="sw-gender" onchange="filterAvailableEvents()"><option>Boys</option><option>Girls</option></select></div>
@@ -587,21 +602,39 @@
                     <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-2" onblur="formatSeedTime(this)"></div>
                     <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-3" onblur="formatSeedTime(this)"></div>
                 </div>
-                </div>
                 <div style="display:flex; justify-content:space-between;">
                     <button class="btn btn-secondary" onclick="clearSwimmerForm()">Clear Form</button>
                     <button class="btn btn-primary" id="btn-sw-save" onclick="addSwimmer()">Register Swimmer</button>
                 </div>
             </div>
-            <div class="card"><div class="table-responsive"><table><thead><tr><th>Name</th><th>School</th><th>Group</th><th>Events</th></tr></thead><tbody id="swimmer-table-body"></tbody></table></div></div>
+            <div class="card"><div class="table-responsive"><table><thead><tr><th>Name</th><th>School</th><th>Group</th><th>Events</th><th style="width:100px;">Action</th></tr></thead><tbody id="swimmer-table-body"></tbody></table></div></div>
         </div>
 
-        <!-- SEEDING -->
         <div id="seeding" class="content-container">
-            <header><div><h1>Meet Seeding</h1></div></header>
-            <div class="card">
-                <select id="seed-event-jump" onchange="renderSeeding(this.value)"><option value="">Select Event</option></select>
-                <div id="seeding-display-area" style="margin-top:2rem;"></div>
+            <header class="no-print">
+                <div><h1>Meet Seeding & Program</h1></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-primary" onclick="renderSeedingSummary()"><ion-icon name="list-outline"></ion-icon> Entry Summary</button>
+                    <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Seeding</button>
+                </div>
+            </header>
+
+            <div id="seeding-filters" class="card no-print" style="margin-bottom: 1rem;">
+                <div class="grid" style="grid-template-columns: 2fr 1fr 1fr auto; align-items: flex-end; gap: 10px;">
+                    <div class="form-group" style="margin:0"><label>Select Event (for Heat Sheets)</label><select id="seed-event-jump" onchange="renderSeeding(this.value)"><option value="">Select Event</option></select></div>
+                    <div class="form-group" style="margin:0"><label>Gender (Filter Summary)</label><select id="seed-f-gender" onchange="renderSeedingSummary()"><option value="">All</option><option>Boys</option><option>Girls</option></select></div>
+                    <div class="form-group" style="margin:0"><label>Age (Filter Summary)</label><select id="seed-f-age" onchange="renderSeedingSummary()"><option value="">All</option></select></div>
+                    <button class="btn btn-secondary" onclick="clearSeedingFilters()">Reset</button>
+                </div>
+            </div>
+
+            <div class="card printable">
+                <div id="seeding-display-area">
+                    <div style="text-align:center; padding: 50px; color: var(--text-dim);">
+                        <ion-icon name="information-circle-outline" style="font-size:3rem;"></ion-icon>
+                        <p>Select an event to view Heat Sheets, or click "Entry Summary" to see the full participant list.</p>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -619,12 +652,20 @@
             <header class="no-print"><div><h1>Reports & Results</h1></div>
                 <div style="display:flex; gap:10px;">
                     <select id="report-event-jump" onchange="renderResultsReport(this.value)"><option value="">Final Results (Select Event)</option></select>
+                    <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master Swimmer List</button>
                     <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Report</button>
                 </div>
             </header>
+            <div id="report-filters" class="card no-print" style="display:none; margin-bottom:1rem;">
+                <div class="grid" style="grid-template-columns: 1fr 1fr auto;">
+                    <select id="f-gender" onchange="renderSwimmerMasterList()"><option value="">All Genders</option><option>Boys</option><option>Girls</option></select>
+                    <select id="f-age" onchange="renderSwimmerMasterList()"><option value="">All Age Groups</option></select>
+                    <button class="btn btn-secondary" onclick="document.getElementById('report-filters').style.display='none'; document.getElementById('report-event-jump').value=''; renderResultsReport('')">Close Filters</button>
+                </div>
+            </div>
             <div id="reports-display-area" class="card printable">
                 <!-- Data will be populated here -->
-                <div style="text-align:center; padding: 50px; color: var(--text-dim);">Select an event from the top to view the results report.</div>
+                <div style="text-align:center; padding: 50px; color: var(--text-dim);">Select an event or the Master List button above to view reports.</div>
             </div>
             
             <div class="card no-print" style="margin-top:2rem;">
@@ -653,6 +694,7 @@
             if(event && event.currentTarget) event.currentTarget.classList.add('active');
             if(id === 'leaderboard') calculateStandings();
             if(id === 'swimmers') filterAvailableEvents();
+            if(id === 'seeding') renderSeedingSummary();
             updateStats();
         }
 
@@ -739,11 +781,61 @@
             state.schools.push({ name: n, zone: z });
             renderSchools(); populateDropdowns(); saveData();
             document.getElementById('sch-name').value = "";
+            document.getElementById('sch-zone').value = "";
+            showToast("School Added");
+        }
+        function clearSchoolForm() {
+            document.getElementById('sch-name').value = "";
+            document.getElementById('sch-zone').value = "";
+            const btn = document.getElementById('btn-sch-save');
+            btn.innerText = "Add School";
+            btn.onclick = addSchool;
         }
         function renderSchools() {
-            document.getElementById('school-table-body').innerHTML = state.schools.map((s,i) => `<tr><td>${s.name}</td><td>${s.zone}</td><td><button onclick="delSch(${i})">X</button></td></tr>`).join('');
+            document.getElementById('school-table-body').innerHTML = state.schools.map((s,i) => `
+                <tr onclick="editSchool(${i})">
+                    <td>${s.name}</td>
+                    <td>${s.zone}</td>
+                    <td>
+                        <button class="btn-secondary" onclick="event.stopPropagation(); delSch(${i})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </td>
+                </tr>`).join('');
         }
-        function delSch(i) { state.schools.splice(i,1); renderSchools(); saveData(); }
+        function delSch(i) { 
+            if(confirm("Delete this school?")) {
+                state.schools.splice(i,1); renderSchools(); populateDropdowns(); saveData(); 
+            }
+        }
+        function editSchool(i) {
+            const s = state.schools[i];
+            document.getElementById('sch-name').value = s.name;
+            document.getElementById('sch-zone').value = s.zone;
+            const btn = document.getElementById('btn-sch-save');
+            btn.innerText = "Update School";
+            btn.onclick = () => updateSchool(i);
+            document.querySelector('#schools .card').scrollIntoView({ behavior: 'smooth' });
+        }
+        function updateSchool(i) {
+            const oldName = state.schools[i].name;
+            const newName = document.getElementById('sch-name').value.trim();
+            const newZone = document.getElementById('sch-zone').value.trim();
+            
+            if(!newName) return;
+
+            // 1. Update the school list
+            state.schools[i] = { name: newName, zone: newZone };
+            
+            // 2. Propagation: Update all swimmers who belong to this school
+            state.swimmers.forEach(s => {
+                if(s.school === oldName) s.school = newName;
+            });
+
+            clearSchoolForm();
+            renderSchools(); renderSwimmers(); populateDropdowns(); saveData();
+            showToast("School Information Updated");
+        }
 
         function resetEventsToDefault() {
             state.events = [
@@ -755,12 +847,60 @@
         function addEvent() {
             const no = parseInt(document.getElementById('ev-no').value), g = document.getElementById('ev-gender').value, a = document.getElementById('ev-age').value, n = document.getElementById('ev-name').value;
             if(!no || !n) return;
-            state.events.push({ no, gender:g, age:a, name:n, type: n.toLowerCase().includes('relay') ? 'relay' : 'indiv' });
-            renderEvents(); populateDropdowns(); saveData();
+            
+            const evData = { no, gender:g, age:a, name:n, type: n.toLowerCase().includes('relay') ? 'relay' : 'indiv' };
+            
+            // Duplicate Check (by Number)
+            const existingIdx = state.events.findIndex(e => e.no === no);
+            if(existingIdx !== -1) {
+                if(confirm(`Event #${no} already exists. Update it?`)) {
+                    state.events[existingIdx] = evData;
+                } else { return; }
+            } else {
+                // Secondary Duplicate Check (by details)
+                if(state.events.some(e => e.gender === g && e.age === a && e.name === n)) {
+                    if(!confirm("An exact same event already exists with a different number. Add anyway?")) return;
+                }
+                state.events.push(evData);
+            }
+            
+            renderEvents(); populateDropdowns(); saveData(); clearEventForm();
+            showToast("Event Successfully Saved!");
+        }
+        function clearEventForm() {
+            document.getElementById('ev-no').value = "";
+            document.getElementById('ev-name').value = "";
+            document.getElementById('btn-ev-save').innerText = "Add";
         }
         function renderEvents() {
             state.events.sort((a,b)=>a.no-b.no);
-            document.getElementById('event-table-body').innerHTML = state.events.map((e,i)=> `<tr><td>${e.no}</td><td>${e.gender}</td><td>${e.age}</td><td>${e.name}</td><td><button onclick="delEv(${i})">X</button></td></tr>`).join('');
+            document.getElementById('event-table-body').innerHTML = state.events.map((e,i)=> `
+                <tr onclick="editEvent(${e.no})">
+                    <td>${e.no}</td>
+                    <td>${e.gender}</td>
+                    <td>${e.age}</td>
+                    <td>${e.name}</td>
+                    <td>
+                        <button class="btn-secondary" onclick="event.stopPropagation(); delEv(${e.no})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </td>
+                </tr>`).join('');
+        }
+        function editEvent(no) {
+            const e = state.events.find(ev => ev.no === no);
+            if(!e) return;
+            document.getElementById('ev-no').value = e.no;
+            document.getElementById('ev-gender').value = e.gender;
+            document.getElementById('ev-age').value = e.age;
+            document.getElementById('ev-name').value = e.name;
+            document.getElementById('btn-ev-save').innerText = "Update";
+        }
+        function delEv(no) {
+            if(confirm(`Delete Event #${no}?`)) {
+                state.events = state.events.filter(e => e.no !== no);
+                renderEvents(); populateDropdowns(); saveData();
+            }
         }
 
         function autoShortName(v) {
@@ -809,11 +949,7 @@
             let s2 = document.getElementById('sw-ev-2').value;
             let s3 = document.getElementById('sw-ev-3').value;
 
-            // PREVENT DUPLICATES BEFORE POPULATING
-            if (s2 && s2 === s1) { s2 = ""; document.getElementById('sw-ev-2').value = ""; }
-            if (s3 && (s3 === s1 || s3 === s2)) { s3 = ""; document.getElementById('sw-ev-3').value = ""; }
-
-            // Base list filtered by gender
+            // Base list filtered by gender/age
             const baseEvents = state.events.filter(e => {
                 const eg = String(e.gender || "").toLowerCase().trim();
                 const ug = g.toLowerCase().trim();
@@ -828,11 +964,19 @@
             // Helper to populate a dropdown
             const populate = (id, currentVal, others) => {
                 const sel = document.getElementById(id);
-                // Filter: exclude events selected in others
-                const filtered = baseEvents.filter(e => !others.includes(String(e.no)));
                 
+                // CRITICAL FIX: Ensure currentVal is included even if it's in 'others' or doesn't match base filter
+                // This prevents selection from disappearing when editing existing data
+                let finalOptions = baseEvents.filter(e => !others.includes(String(e.no)) || (currentVal && String(e.no) === String(currentVal)));
+                
+                // Fallback: If currentVal is assigned but not in baseEvents (e.g. category mismatch), add it manually
+                if (currentVal && !finalOptions.some(e => String(e.no) === String(currentVal))) {
+                    const missingEv = state.events.find(e => String(e.no) === String(currentVal));
+                    if (missingEv) finalOptions.push(missingEv);
+                }
+
                 let html = '<option value="">Select</option>';
-                html += filtered.map(x => `<option value="${x.no}">${x.no} - ${x.name} (${x.age})</option>`).join('');
+                html += finalOptions.map(x => `<option value="${x.no}">${x.no} - ${x.name} (${x.age})</option>`).join('');
                 sel.innerHTML = html;
                 sel.value = currentVal;
             };
@@ -878,6 +1022,14 @@
                 }
             }
             
+            if(!id) {
+                // Duplicate check for new swimmers
+                if(state.swimmers.some(x => x.full.toLowerCase() === s.full.toLowerCase() && x.dob === s.dob)) {
+                    alert("Error: A swimmer with this name and DOB is already registered!");
+                    return;
+                }
+            }
+
             if(id) {
                 const idx = state.swimmers.findIndex(x => x.id == id);
                 if(idx !== -1) state.swimmers[idx] = s;
@@ -892,31 +1044,49 @@
         function editSwimmer(id) {
             const s = state.swimmers.find(x => x.id == id);
             if(!s) return;
-            
-            // Populate basic info
+
             document.getElementById('sw-id').value = s.id;
             document.getElementById('sw-fullname').value = s.full || s.short;
             document.getElementById('sw-shortname').value = s.short;
             document.getElementById('sw-dob').value = s.dob || "";
             document.getElementById('sw-gender').value = s.gender;
-            document.getElementById('sw-school').value = s.school;
+            
+            // Ensure school exists in dropdown
+            const schSel = document.getElementById('sw-school');
+            if(s.school && ![...schSel.options].some(o => o.value === s.school)) {
+                const opt = document.createElement('option');
+                opt.value = s.school; opt.innerText = s.school;
+                schSel.appendChild(opt);
+            }
+            schSel.value = s.school || "";
+            
             document.getElementById('sw-agegroup').value = s.age;
             
             // Re-trigger auto-fills
             autoFillZonal(s.school);
-            // Re-calculate age group fresh from DOB
-            autoAgeGroup(s.dob);
             
-            // Now fill events
-            setTimeout(() => {
-                for(let i=1; i<=3; i++) {
-                    const ev = s.evs[i-1];
-                    const sel = document.getElementById(`sw-ev-${i}`);
-                    if(sel) sel.value = ev ? ev.no : "";
-                    const timeInp = document.getElementById(`sw-time-${i}`);
-                    if(timeInp) timeInp.value = ev ? ev.t : "";
+            // Explicitly call filterAvailableEvents BEFORE setting event values
+            filterAvailableEvents();
+            
+            for(let i=1; i<=3; i++) {
+                const evData = s.evs[i-1];
+                const sel = document.getElementById(`sw-ev-${i}`);
+                if(evData) {
+                    // If the event isn't in the dropdown (due to filtering), add it back so it's visible
+                    if(![...sel.options].some(o => o.value == evData.no)) {
+                        const evCatalogDetail = state.events.find(e => e.no == evData.no);
+                        const opt = document.createElement('option');
+                        opt.value = evData.no;
+                        opt.innerText = evCatalogDetail ? `${evData.no} - ${evCatalogDetail.name}` : `Event ${evData.no}`;
+                        sel.appendChild(opt);
+                    }
+                    sel.value = evData.no;
+                    document.getElementById(`sw-time-${i}`).value = evData.t || "";
+                } else {
+                    sel.value = "";
+                    document.getElementById(`sw-time-${i}`).value = "";
                 }
-            }, 10);
+            }
             
             document.getElementById('btn-sw-save').innerText = "Update Swimmer";
             document.querySelector('#swimmers .card').scrollIntoView({ behavior: 'smooth' });
@@ -938,12 +1108,16 @@
 
         function renderSwimmers() {
             document.getElementById('swimmer-table-body').innerHTML = state.swimmers.map(s => `
-                <tr onclick="editSwimmer(${s.id})" style="cursor:pointer">
+                <tr onclick="editSwimmer(${s.id})">
                     <td>${s.short || s.full}</td>
                     <td>${s.school}</td>
                     <td>${s.age}</td>
                     <td>${s.evs.map(x=>x.no).join(', ')}</td>
-                    <td><button class="btn-secondary" onclick="event.stopPropagation(); deleteSwimmer(${s.id})" style="padding:2px 8px; font-size:12px;">Delete</button></td>
+                    <td>
+                        <button class="btn-secondary" onclick="event.stopPropagation(); deleteSwimmer(${s.id})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
+                            <ion-icon name="trash-outline"></ion-icon>
+                        </button>
+                    </td>
                 </tr>`).join('');
         }
 
@@ -954,16 +1128,86 @@
             }
         }
 
+        function clearSeedingFilters() {
+            document.getElementById('seed-event-jump').value = '';
+            document.getElementById('seed-f-gender').value = '';
+            document.getElementById('seed-f-age').value = '';
+            renderSeedingSummary();
+        }
+
+        function renderSeedingSummary() {
+            document.getElementById('seed-event-jump').value = ''; // Reset event selection when showing summary
+            const fg = document.getElementById('seed-f-gender').value;
+            const fa = document.getElementById('seed-f-age').value;
+
+            // 1. Filter the events dropdown based on selection
+            const filteredEvents = state.events.filter(e => {
+                const eg = String(e.gender || "").toLowerCase();
+                const ug = (fg || "").toLowerCase();
+                const matchGender = (!fg || eg === ug || (ug === 'boys' && (eg === 'male' || eg === 'm')) || (ug === 'girls' && (eg === 'female' || eg === 'f')));
+                const matchAge = (!fa || e.age === fa);
+                return matchGender && matchAge;
+            });
+            
+            const evsHtml = filteredEvents.map(e => `<option value="${e.no}">${e.no} - ${e.name} (${e.gender} ${e.age})</option>`).join('');
+            document.getElementById('seed-event-jump').innerHTML = '<option value="">Select Event (Filtered)</option>' + evsHtml;
+
+            // 2. Filter the summary list
+            let list = state.swimmers.filter(s => {
+                return (!fg || s.gender === fg) && (!fa || s.age === fa);
+            });
+
+            // Sort: Gender -> Age Group (Under 12 first) -> Name
+            list.sort((a,b) => {
+                if(a.gender !== b.gender) return a.gender.localeCompare(b.gender);
+                const getAge = x => parseInt(x.match(/\d+/) || 0);
+                if(a.age !== b.age) return getAge(a.age) - getAge(b.age);
+                return a.full.localeCompare(b.full);
+            });
+
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.1rem; color:var(--primary-light);">Meet Entry Summary & Seeding Preparation</p>
+                    <p style="font-size:1rem; margin-top:5px; padding:5px 15px; background:var(--primary); color:white; display:inline-block; border-radius:8px; font-weight:600;">${fg || 'All Genders'} | ${fa || 'All Age Groups'}</p>
+                </div>
+                <table class="hytek-table">
+                    <thead><tr><th style="width:40px">#</th><th>Name</th><th>School</th><th>Group</th><th>Selected Events (No)</th></tr></thead>
+                    <tbody>
+            `;
+
+            list.forEach((s, i) => {
+                html += `<tr>
+                    <td style="width:40px; text-align:center">${i+1}</td>
+                    <td style="font-weight:600; width:220px">${s.full}</td>
+                    <td style="width:250px">${s.school}</td>
+                    <td style="width:80px; text-align:center">${s.age}</td>
+                    <td style="text-align:right">${s.evs.map(x=>x.no).join(', ')}</td>
+                </tr>`;
+            });
+
+            if(list.length === 0) html += `<tr><td colspan="5" style="text-align:center; padding:20px;">No swimmers found with selected filters.</td></tr>`;
+
+            html += `</tbody></table>`;
+            document.getElementById('seeding-display-area').innerHTML = html;
+        }
+
         function renderSeeding(no) {
             no = parseInt(no); if(!no) return;
             const ev = state.events.find(e=>e.no===no);
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             
             // HY-TEK Style Lane Seeding
-            let sorted = swimmers.sort((a,b) => tToSec(a.evs.find(x=>x.no===no).t) - tToSec(b.evs.find(x=>x.no===no).t));
+            let sorted = swimmers.sort((a,b) => {
+                const getT = x => {
+                    const found = x.evs.find(z => z.no === no);
+                    return found ? tToSec(found.t) : 999999;
+                };
+                return getT(a) - getT(b);
+            });
             
-            const laneConfig = state.settings.lanes === 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
-            let chunk = state.settings.lanes;
+            const laneConfig = state.settings.lanes == 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
+            let chunk = state.settings.lanes || 8;
             let heatsCount = Math.ceil(sorted.length / chunk);
             
             let html = `
@@ -978,6 +1222,10 @@
                     <span>Direct Final</span>
                 </div>
             `;
+
+            if(sorted.length === 0) {
+                html += `<div style="text-align:center; padding: 40px; color: var(--text-dim);">No swimmers currently registered for this event.</div>`;
+            }
 
             for(let h=1; h<=heatsCount; h++) {
                 let heatList = sorted.slice((h-1)*chunk, h*chunk);
@@ -1046,10 +1294,67 @@
             html += `</tbody></table>`;
             document.getElementById('reports-display-area').innerHTML = html;
         }
+
+        function renderSwimmerMasterList() {
+            document.getElementById('report-filters').style.display = 'block';
+            document.getElementById('report-event-jump').value = '';
+            
+            const fg = document.getElementById('f-gender').value;
+            const fa = document.getElementById('f-age').value;
+            
+            let list = state.swimmers.filter(s => {
+                return (!fg || s.gender === fg) && (!fa || s.age === fa);
+            });
+
+            // Sort by Gender, then Age Group (ascending), then Name
+            list.sort((a,b) => {
+                if(a.gender !== b.gender) return a.gender.localeCompare(b.gender);
+                const getAge = x => parseInt(x.match(/\d+/) || 0);
+                if(a.age !== b.age) return getAge(a.age) - getAge(b.age);
+                return a.full.localeCompare(b.full);
+            });
+
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.1rem; color:var(--primary-light);">Master Swimmer Enrollment List</p>
+                    <p style="font-size:1rem; margin-top:5px; padding:5px 15px; background:var(--primary); color:white; display:inline-block; border-radius:8px; font-weight:600;">${fg || 'All Genders'} | ${fa || 'All Age Groups'}</p>
+                </div>
+                <table class="hytek-table">
+                    <thead><tr><th style="width:50px">No</th><th>Name</th><th>Gender</th><th>Group</th><th>School</th><th>Events</th></tr></thead>
+                    <tbody>
+            `;
+
+            list.forEach((s, i) => {
+                html += `<tr>
+                    <td>${i+1}</td>
+                    <td style="font-weight:600">${s.full}</td>
+                    <td>${s.gender}</td>
+                    <td>${s.age}</td>
+                    <td>${s.school}</td>
+                    <td>${s.evs.map(x=>x.no).join(', ')}</td>
+                </tr>`;
+            });
+
+            html += `</tbody></table>`;
+            document.getElementById('reports-display-area').innerHTML = html;
+        }
         function renderResultEntry(no) {
             no = parseInt(no); if(!no) return;
             const list = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
-            document.getElementById('result-entry-area').innerHTML = `<table class="hytek-table">${list.map(s=>`<tr><td>${s.short}</td><td><input type="text" onblur="formatSeedTime(this)" class="r-inp" data-id="${s.id}" placeholder="MM:SS.ms"></td></tr>`).join('')}</table><button class="btn btn-primary" style="margin-top:1rem;" onclick="calcRes(${no})">Calculate & Save Results</button>`;
+            const existingResults = state.results[no] || {};
+            
+            document.getElementById('result-entry-area').innerHTML = `
+                <table class="hytek-table">
+                    <thead><tr><th>Swimmer</th><th>Time</th></tr></thead>
+                    <tbody>
+                        ${list.map(s => {
+                            const val = existingResults[s.id] ? existingResults[s.id].t : "";
+                            return `<tr><td>${s.short}</td><td><input type="text" onblur="formatSeedTime(this)" class="r-inp" data-id="${s.id}" value="${val}" placeholder="MM:SS.ms"></td></tr>`;
+                        }).join('')}
+                    </tbody>
+                </table>
+                <button class="btn btn-primary" style="margin-top:1rem;" onclick="calcRes(${no})">Calculate & Save Results</button>`;
         }
         function calcRes(no) {
             const inps = document.querySelectorAll('.r-inp'); let rs = [];
@@ -1081,7 +1386,11 @@
         }
 
         function populateDropdowns() {
-            const sch = state.schools.map(s=>`<option>${s.name}</option>`).join(''); document.getElementById('sw-school').innerHTML = sch;
+            const schNames = state.schools.map(s => s.name);
+            document.getElementById('sw-school').innerHTML = schNames.map(n => `<option>${n}</option>`).join('');
+            document.getElementById('school-names-list').innerHTML = schNames.map(n => `<option value="${n}">`).join('');
+            
+            document.getElementById('swimmer-names-list').innerHTML = state.swimmers.map(s => `<option value="${s.full}">`).join('');
             
             // Standard age groups + unique ones from catalog
             const stdAges = ["Under 12", "Under 14", "Under 16", "Under 18", "Under 20"];
@@ -1093,6 +1402,8 @@
 
             const ageOpts = ages.map(a => `<option value="${a}">${a}</option>`).join('');
             document.getElementById('sw-agegroup').innerHTML = '<option value="">Select Age Group</option>' + ageOpts;
+            document.getElementById('f-age').innerHTML = '<option value="">All Age Groups</option>' + ageOpts;
+            document.getElementById('seed-f-age').innerHTML = '<option value="">All</option>' + ageOpts;
 
             const evs = state.events.map(e=>`<option value="${e.no}">${e.no} - ${e.name}</option>`).join('');
             document.getElementById('seed-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
@@ -1100,6 +1411,15 @@
             document.getElementById('report-event-jump').innerHTML = '<option value="">Select Event</option>' + evs;
             
             filterAvailableEvents();
+        }
+
+        function handleNameInput(v) {
+            autoShortName(v);
+            const s = state.swimmers.find(x => x.full.toLowerCase() === v.toLowerCase());
+            if(s && v === s.full) { 
+                editSwimmer(s.id);
+                showToast("Matching swimmer found! Details loaded.");
+            }
         }
 
         function saveSettings() {
