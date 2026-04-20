@@ -374,7 +374,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" onclick="showPage('leaderboard')">
+                <a class="nav-link" onclick="showPage('standings')">
                     <ion-icon name="trophy-outline"></ion-icon> Standings
                 </a>
             </li>
@@ -707,7 +707,7 @@
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             if(event && event.currentTarget) event.currentTarget.classList.add('active');
-            if(id === 'leaderboard') calculateStandings();
+            if(id === 'standings') calculateStandings();
             if(id === 'swimmers') filterAvailableEvents();
             if(id === 'seeding') renderSeedingSummary();
             updateStats();
