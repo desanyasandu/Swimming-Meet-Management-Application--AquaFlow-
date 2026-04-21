@@ -519,6 +519,24 @@
                             <ion-icon name="trash-bin-outline"></ion-icon> Reset Meet
                         </button>
                     </div>
+
+                    <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--glass-border);">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 1rem;"><ion-icon name="shield-checkmark" style="vertical-align: middle;"></ion-icon> System Backup & Restore (Full)</h3>
+                        <p style="color:var(--text-dim); margin-bottom: 1.5rem;">This creates a 100% complete backup of the entire database, including all results, points system settings, and swimmer details.</p>
+                        
+                        <div style="display:flex; gap:20px; justify-content: center; flex-wrap:wrap;">
+                            <button class="btn btn-primary" style="padding: 1rem 2rem; font-size: 1rem;" onclick="exportData()">
+                                <ion-icon name="save-outline"></ion-icon> Backup Everything (JSON)
+                            </button>
+                            
+                            <div style="position:relative;">
+                                <button class="btn btn-secondary" style="padding: 1rem 2rem; font-size: 1rem;" onclick="document.getElementById('json-file').click()">
+                                    <ion-icon name="cloud-download-outline"></ion-icon> Restore Everything (JSON)
+                                </button>
+                                <input type="file" id="json-file" style="display:none;" accept=".json" onchange="importData(event)">
+                            </div>
+                        </div>
+                    </div>
                     
                     <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--glass-border); display: flex; justify-content: center; gap: 40px;">
                         <div style="text-align: left;">
@@ -1307,11 +1325,12 @@
             const results = state.results[no];
             if(!results) { document.getElementById('reports-display-area').innerHTML = "No results recorded for this event."; return; }
 
+            const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
             let list = [];
             Object.keys(results).forEach(id => {
                 let sw = state.swimmers.find(x=>x.id==id);
                 if(sw) {
-                    list.push({ sw, t: results[id].t, pts: results[id].pts, s: tToSec(results[id].t) });
+                    list.push({ sw, t: results[id].t, s: tToSec(results[id].t) });
                 }
             });
             list.sort((a,b) => a.s - b.s);
@@ -1334,6 +1353,7 @@
             list.forEach((r, i) => {
                 const yr = r.sw.dob ? new Date(r.sw.dob).getFullYear().toString().slice(-2) : '14';
                 const seedInfo = r.sw.evs.find(x=>x.no===no);
+                const pts = i < 8 ? ptArr[i] : 0;
                 html += `<tr>
                     <td>${i+1}</td>
                     <td>${r.sw.short}</td>
@@ -1341,7 +1361,7 @@
                     <td>${r.sw.school}</td>
                     <td>${seedInfo ? seedInfo.t : 'NT'}</td>
                     <td style="text-align:right; font-weight:bold;">${r.t}</td>
-                    <td style="text-align:right">${r.pts || 0}</td>
+                    <td style="text-align:right">${pts}</td>
                 </tr>`;
             });
 
@@ -1459,19 +1479,35 @@
         function calculateStandings() {
             let sPts = {}, schPts = {};
             state.swimmers.forEach(s => { sPts[s.id] = 0; if(!schPts[s.school]) schPts[s.school] = { bi:0, gi:0, br:0, gr:0, total:0 }; });
+            
             Object.keys(state.results).forEach(no => {
                 const ev = state.events.find(e=>e.no==no);
                 if(!ev) return;
-                Object.keys(state.results[no]).forEach(id => {
-                    let pts = state.results[no][id].pts; if(sPts[id] !== undefined) sPts[id]+=pts;
-                    let sw = state.swimmers.find(x=>x.id==id); if(sw) {
-                        let sc = schPts[sw.school]; if(ev.type==='relay') (sw.gender==='Boys'?sc.br+=pts:sc.gr+=pts); else (sw.gender==='Boys'?sc.bi+=pts:sc.gi+=pts);
+                
+                const results = state.results[no];
+                const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
+                
+                let eventList = [];
+                Object.keys(results).forEach(id => {
+                    if(results[id].t) eventList.push({ id, s: tToSec(results[id].t) });
+                });
+                eventList.sort((a,b) => a.s - b.s);
+                
+                eventList.forEach((r, idx) => {
+                    let pts = idx < 8 ? ptArr[idx] : 0;
+                    let id = r.id;
+                    if(sPts[id] !== undefined) sPts[id]+=pts;
+                    let sw = state.swimmers.find(x=>x.id==id);
+                    if(sw) {
+                        let sc = schPts[sw.school];
+                        if(ev.type==='relay') (sw.gender === 'Boys' || sw.gender === 'Male' ? sc.br+=pts : sc.gr+=pts); 
+                        else (sw.gender === 'Boys' || sw.gender === 'Male' ? sc.bi+=pts : sc.gi+=pts);
                         sc.total+=pts;
                     }
                 });
             });
-            document.getElementById('stand-sw-boys').innerHTML = state.swimmers.filter(x=>x.gender==='Boys').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
-            document.getElementById('stand-sw-girls').innerHTML = state.swimmers.filter(x=>x.gender==='Girls').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+            document.getElementById('stand-sw-boys').innerHTML = state.swimmers.filter(x=>x.gender==='Boys' || x.gender==='Male').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+            document.getElementById('stand-sw-girls').innerHTML = state.swimmers.filter(x=>x.gender==='Girls' || x.gender==='Female').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
             document.getElementById('stand-schools').innerHTML = Object.entries(schPts).sort((a,b)=>b[1].total-a[1].total).map(([n,d],i)=>`<tr><td>${i+1}</td><td>${n}</td><td>${d.bi + d.gi + d.br + d.gr}</td></tr>`).join('');
         }
 
@@ -1518,8 +1554,9 @@
 
         function handleNameInput(v) {
             autoShortName(v);
-            const s = state.swimmers.find(x => x.full.toLowerCase() === v.toLowerCase());
-            if(s && v === s.full) { 
+            const searchVal = v.toLowerCase().trim();
+            const s = state.swimmers.find(x => x.full.toLowerCase().trim() === searchVal);
+            if(s && searchVal === s.full.toLowerCase().trim()) { 
                 editSwimmer(s.id);
                 showToast("Matching swimmer found! Details loaded.");
             }
@@ -1604,16 +1641,32 @@
                 School: s.school,
                 Gender: s.gender,
                 AgeGroup: s.age,
+                DOB: s.dob || '',
                 Ev1_No: s.evs[0]?.no || '',
                 Time1: s.evs[0]?.t || '',
                 Ev2_No: s.evs[1]?.no || '',
                 Time2: s.evs[1]?.t || '',
                 Ev3_No: s.evs[2]?.no || '',
-                Time3: s.evs[2]?.t || ''
+                Time3: s.evs[2]?.t || '',
+                Ev4_No: s.evs[3]?.no || '',
+                Time4: s.evs[3]?.t || '',
+                Ev5_No: s.evs[4]?.no || '',
+                Time5: s.evs[4]?.t || ''
             }));
             const ws_sw = XLSX.utils.json_to_sheet(swData);
             XLSX.utils.book_append_sheet(wb, ws_sw, "Swimmers");
             
+            // 4. Results
+            let resData = [];
+            Object.keys(state.results).forEach(no => {
+                Object.keys(state.results[no]).forEach(id => {
+                    let sw = state.swimmers.find(x=>x.id==id);
+                    if(sw) resData.push({ Event: no, Swimmer: sw.full, School: sw.school, Time: state.results[no][id].t, Pts: state.results[no][id].pts });
+                });
+            });
+            const ws_res = XLSX.utils.json_to_sheet(resData);
+            XLSX.utils.book_append_sheet(wb, ws_res, "Results");
+
             XLSX.writeFile(wb, `${state.settings.meetName}_Data.xlsx`);
             showToast("Excel Exported!");
         }
