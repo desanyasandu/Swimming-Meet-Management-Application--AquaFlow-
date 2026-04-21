@@ -320,7 +320,7 @@
             .table-responsive { overflow: visible !important; border: none !important; }
             table { width: 100% !important; border-collapse: collapse !important; }
             th, td { color: black !important; border-bottom: 1px solid #ddd !important; -webkit-print-color-adjust: exact; }
-            .hytek-table { border: 1px solid black !important; font-size: 10pt !important; }
+            .hytek-table { border: 1px solid black !important; font-size: 10pt !important; width: 100% !important; table-layout: fixed !important; }
             .hytek-table th { border-bottom: 1px solid black !important; padding: 6px 4px !important; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
             .hytek-table td { padding: 4px !important; border: none !important; vertical-align: top !important; }
             .report-header { margin-bottom: 20px !important; border-bottom: 2px solid black !important; padding-bottom: 10px !important; }
@@ -710,6 +710,8 @@
             if(id === 'standings') calculateStandings();
             if(id === 'swimmers') filterAvailableEvents();
             if(id === 'seeding') renderSeedingSummary();
+            if(id === 'events') updateNextEventNumber();
+            if(id === 'settings') loadSettingsIntoForm();
             updateStats();
         }
 
@@ -767,7 +769,7 @@
                             resetEventsToDefault();
                         }
                     }
-                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns();
+                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns(); updateNextEventNumber();
                     // One-time fix for existing swimmers with incorrect age groups
                     let fixed = false;
                     state.swimmers.forEach(s => {
@@ -783,6 +785,18 @@
                         }
                     });
                     if(fixed) { saveData(); renderSwimmers(); }
+                    
+                    // One-time fix for ID collisions
+                    let idMap = new Map();
+                    let hasCollisions = false;
+                    state.swimmers.forEach(s => {
+                        if (idMap.has(s.id)) {
+                            s.id = Date.now() + Math.floor(Math.random() * 1000000) + idMap.size;
+                            hasCollisions = true;
+                        }
+                        idMap.set(s.id, s);
+                    });
+                    if (hasCollisions) { saveData(); renderSwimmers(); }
                 };
             } catch (err) { 
                 console.error("Load error:", err);
@@ -857,7 +871,17 @@
                 { no: 1, gender: 'Girls', age: 'Under 18', name: '400 Free', type: 'indiv' },
                 { no: 51, gender: 'Boys', age: 'Under 12', name: '4x50 Medley Relay', type: 'relay' }
             ];
-            renderEvents(); populateDropdowns(); saveData();
+            renderEvents(); populateDropdowns(); saveData(); updateNextEventNumber();
+        }
+        function updateNextEventNumber() {
+            let nextNo = 1;
+            if (state.events && state.events.length > 0) {
+                nextNo = Math.max(...state.events.map(e => e.no)) + 1;
+            }
+            const evNoInput = document.getElementById('ev-no');
+            if (evNoInput) {
+                evNoInput.value = nextNo;
+            }
         }
         function addEvent() {
             const no = parseInt(document.getElementById('ev-no').value), g = document.getElementById('ev-gender').value, a = document.getElementById('ev-age').value, n = document.getElementById('ev-name').value;
@@ -883,7 +907,7 @@
             showToast("Event Successfully Saved!");
         }
         function clearEventForm() {
-            document.getElementById('ev-no').value = "";
+            updateNextEventNumber();
             document.getElementById('ev-name').value = "";
             document.getElementById('btn-ev-save').innerText = "Add";
         }
@@ -1017,7 +1041,7 @@
         function addSwimmer() {
             const id = document.getElementById('sw-id').value;
             let s = { 
-                id: id ? parseFloat(id) : Date.now(), 
+                id: id ? parseFloat(id) : (Date.now() + Math.floor(Math.random() * 1000000)), 
                 full: document.getElementById('sw-fullname').value,
                 short: document.getElementById('sw-shortname').value, 
                 dob: document.getElementById('sw-dob').value,
@@ -1127,7 +1151,7 @@
                     <td>${s.short || s.full}</td>
                     <td>${s.school}</td>
                     <td>${s.age}</td>
-                    <td>${s.evs.map(x=>x.no).join(', ')}</td>
+                    <td>${s.evs.map(x=>getEventName(x.no)).join(', ')}</td>
                     <td>
                         <button class="btn-secondary" onclick="event.stopPropagation(); deleteSwimmer(${s.id})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
                             <ion-icon name="trash-outline"></ion-icon>
@@ -1187,7 +1211,7 @@
                     <p style="font-size:1rem; margin-top:5px; padding:5px 15px; background:var(--primary); color:white; display:inline-block; border-radius:8px; font-weight:600;">${fg || 'All Genders'} | ${fa || 'All Age Groups'}</p>
                 </div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:40px">#</th><th>Name</th><th>School</th><th>Group</th><th>Selected Events (No)</th></tr></thead>
+                    <thead><tr><th style="width:40px">#</th><th>Name</th><th>Gender</th><th>School</th><th>Group</th><th>Selected Events</th></tr></thead>
                     <tbody>
             `;
 
@@ -1195,13 +1219,14 @@
                 html += `<tr>
                     <td style="width:40px; text-align:center">${i+1}</td>
                     <td style="font-weight:600; width:220px">${s.full}</td>
+                    <td style="width:70px">${s.gender}</td>
                     <td style="width:250px">${s.school}</td>
                     <td style="width:80px; text-align:center">${s.age}</td>
-                    <td style="text-align:right">${s.evs.map(x=>x.no).join(', ')}</td>
+                    <td style="text-align:right">${s.evs.map(x=>getEventName(x.no)).join(', ')}</td>
                 </tr>`;
             });
 
-            if(list.length === 0) html += `<tr><td colspan="5" style="text-align:center; padding:20px;">No swimmers found with selected filters.</td></tr>`;
+            if(list.length === 0) html += `<tr><td colspan="6" style="text-align:center; padding:20px;">No swimmers found with selected filters.</td></tr>`;
 
             html += `</tbody></table>`;
             document.getElementById('seeding-display-area').innerHTML = html;
@@ -1242,13 +1267,27 @@
                 html += `<div style="text-align:center; padding: 40px; color: var(--text-dim);">No swimmers currently registered for this event.</div>`;
             }
 
-            for(let h=1; h<=heatsCount; h++) {
-                let heatList = sorted.slice((h-1)*chunk, h*chunk);
+            // Distribute swimmers into heats (Slowest to Fastest)
+            let rawHeats = [];
+            let swimmersCopy = [...sorted];
+            
+            // Populate full heats from the fastest swimmers first
+            while (swimmersCopy.length > chunk) {
+                rawHeats.push(swimmersCopy.splice(0, chunk));
+            }
+            // Put remaining (slowest) swimmers in their own heat
+            if (swimmersCopy.length > 0) rawHeats.push(swimmersCopy);
+            
+            // Reverse order: Slowest heat first, Fastest heat last
+            rawHeats.reverse();
+
+            rawHeats.forEach((heatList, hIndex) => {
+                const h = hIndex + 1;
                 let laneData = {};
                 heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
 
-                html += `<div class="hytek-heat-label printable">Heat ${h} of ${heatsCount} Finals</div>
-                <table class="hytek-table printable">
+                html += `<div class="hytek-heat-label">Heat ${h} of ${rawHeats.length} Finals</div>
+                <table class="hytek-table">
                     <thead><tr><th style="width:50px">Lane</th><th>Name</th><th style="width:40px">Yr</th><th>Team</th><th style="width:100px; text-align:right">Seed Time</th></tr></thead>
                     <tbody>`;
                 
@@ -1258,7 +1297,7 @@
                     html += `<tr><td>${l}</td><td>${s ? s.short : ''}</td><td>${yr}</td><td>${s ? s.school : ''}</td><td style="text-align:right">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td></tr>`;
                 }
                 html += `</tbody></table>`;
-            }
+            });
             document.getElementById('seeding-display-area').innerHTML = html;
         }
 
@@ -1347,7 +1386,7 @@
                     <td>${s.gender}</td>
                     <td>${s.age}</td>
                     <td>${s.school}</td>
-                    <td>${s.evs.map(x=>x.no).join(', ')}</td>
+                    <td>${s.evs.map(x=>getEventName(x.no)).join(', ')}</td>
                 </tr>`;
             });
 
@@ -1356,16 +1395,48 @@
         }
         function renderResultEntry(no) {
             no = parseInt(no); if(!no) return;
-            const list = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
+            const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             const existingResults = state.results[no] || {};
+            
+            // 1. Calculate Seeding Order (Lane order within each Heat)
+            let sorted = swimmers.sort((a,b) => {
+                const getT = x => {
+                    const found = x.evs.find(z => z.no === no);
+                    return found ? tToSec(found.t) : 999999;
+                };
+                return getT(a) - getT(b);
+            });
+
+            let chunk = state.settings.lanes || 8;
+            const laneConfig = state.settings.lanes == 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
+            let rawHeats = [];
+            let swimmersCopy = [...sorted];
+            while (swimmersCopy.length > chunk) rawHeats.push(swimmersCopy.splice(0, chunk));
+            if (swimmersCopy.length > 0) rawHeats.push(swimmersCopy);
+            rawHeats.reverse(); 
+
+            let entryList = [];
+            rawHeats.forEach((heatList, hIdx) => {
+                let laneData = {};
+                heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
+                for(let l=1; l<=state.settings.lanes; l++) {
+                    if(laneData[l]) entryList.push({ ...laneData[l], h: hIdx + 1, l: l });
+                }
+            });
             
             document.getElementById('result-entry-area').innerHTML = `
                 <table class="hytek-table">
-                    <thead><tr><th>Swimmer</th><th>Time</th></tr></thead>
+                    <thead><tr><th style="width:80px">Heat/Lane</th><th>Swimmer</th><th>Time</th></tr></thead>
                     <tbody>
-                        ${list.map(s => {
+                        ${entryList.map(s => {
                             const val = existingResults[s.id] ? existingResults[s.id].t : "";
-                            return `<tr><td>${s.short}</td><td><input type="text" onblur="formatSeedTime(this)" class="r-inp" data-id="${s.id}" value="${val}" placeholder="MM:SS.ms"></td></tr>`;
+                            return `<tr>
+                                <td style="font-size:0.8rem; color:var(--text-dim)">H${s.h} L${s.l}</td>
+                                <td>${s.short}</td>
+                                <td><input type="text" onblur="formatSeedTime(this)" 
+                                    onkeydown="if(event.key==='Enter'){event.preventDefault(); const tr=this.closest('tr').nextElementSibling; if(tr) tr.querySelector('input').focus();}" 
+                                    class="r-inp" data-id="${s.id}" value="${val}" placeholder="MM:SS.ms"></td>
+                            </tr>`;
                         }).join('')}
                     </tbody>
                 </table>
@@ -1381,6 +1452,10 @@
         }
 
         function tToSec(t) { if(!t || t==='-') return 999999; const p = t.split(':').reverse(); let s = parseFloat(p[0]); if(p[1]) s+=p[1]*60; if(p[2]) s+=p[2]*3600; return s; }
+        function getEventName(no) {
+            const e = state.events.find(x => x.no == no);
+            return e ? `${no} - ${e.name}` : no;
+        }
         function calculateStandings() {
             let sPts = {}, schPts = {};
             state.swimmers.forEach(s => { sPts[s.id] = 0; if(!schPts[s.school]) schPts[s.school] = { bi:0, gi:0, br:0, gr:0, total:0 }; });
@@ -1450,9 +1525,27 @@
             }
         }
 
+        function loadSettingsIntoForm() {
+            document.getElementById('set-meet-name').value = state.settings.meetName || "";
+            document.getElementById('set-meet-lanes').value = state.settings.lanes || 8;
+            
+            const ptsI = state.settings.points.indiv || [10,7,5,4,3,2,1,0];
+            ptsI.forEach((p, i) => { if(document.getElementById(`pts-i-${i+1}`)) document.getElementById(`pts-i-${i+1}`).value = p; });
+            
+            const ptsR = state.settings.points.relay || [20,14,10,8,6,4,2,0];
+            ptsR.forEach((p, i) => { if(document.getElementById(`pts-r-${i+1}`)) document.getElementById(`pts-r-${i+1}`).value = p; });
+        }
+
         function saveSettings() {
             state.settings.meetName = document.getElementById('set-meet-name').value;
             state.settings.lanes = parseInt(document.getElementById('set-meet-lanes').value);
+            
+            state.settings.points.indiv = [];
+            for(let i=1; i<=8; i++) state.settings.points.indiv.push(parseInt(document.getElementById(`pts-i-${i}`).value) || 0);
+            
+            state.settings.points.relay = [];
+            for(let i=1; i<=8; i++) state.settings.points.relay.push(parseInt(document.getElementById(`pts-r-${i}`).value) || 0);
+
             saveData(); showToast("Settings Saved");
         }
 
@@ -1663,7 +1756,7 @@
                             });
 
                             const fullName = String(row[colMap.name] || "").trim() || "Unknown Swimmer";
-                            const swId = Math.floor(Date.now() + Math.random() * 1000);
+                            const swId = Date.now() + i + Math.floor(Math.random() * 1000000);
                             
                             // Auto-calculate age group from DOB if not provided or set to default
                             let ageVal = String(row[colMap.age] || "Under 20").trim();
