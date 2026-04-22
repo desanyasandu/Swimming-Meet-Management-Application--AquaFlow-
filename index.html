@@ -308,6 +308,10 @@
         .hytek-table th { border-bottom: 1px solid black; text-align: left; padding: 4px; color: black; font-weight: 700; text-transform: none; background: transparent; }
         .hytek-table td { padding: 4px; border: none; }
         .hytek-heat-label { font-weight: 700; padding: 10px 0 5px 5px; color: black; border-bottom: 1px solid #ddd; }
+        .hytek-event-block { margin-bottom: 40px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 20px; }
+        @media print {
+            .hytek-event-block { page-break-inside: avoid; border-bottom: 2px solid black; margin-bottom: 30px; }
+        }
 
         @media print {
             @page { size: portrait; margin: 1cm; }
@@ -603,22 +607,22 @@
             <div class="card">
                 <h3>Personal Information</h3>
                 <div class="grid">
-                    <div class="form-group"><label>Full Name</label><input type="text" id="sw-fullname" list="swimmer-names-list" oninput="handleNameInput(this.value)"></div>
+                    <div class="form-group"><label>Full Name</label><input type="text" id="sw-fullname" list="swimmer-names-list" oninput="handleNameInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-shortname').focus();}"></div>
                     <datalist id="swimmer-names-list"></datalist>
-                    <div class="form-group"><label>Short Name</label><input type="text" id="sw-shortname"></div>
-                    <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)"></div>
-                    <div class="form-group"><label>Gender</label><select id="sw-gender" onchange="filterAvailableEvents()"><option>Boys</option><option>Girls</option></select></div>
-                    <div class="form-group"><label>School</label><select id="sw-school" onchange="autoFillZonal(this.value)"></select></div>
-                    <div class="form-group"><label>Age Group</label><select id="sw-agegroup" onchange="filterAvailableEvents()"><option value="">Select Age Group</option></select></div>
+                    <div class="form-group"><label>Short Name</label><input type="text" id="sw-shortname" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-dob').focus();}"></div>
+                    <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-gender').focus();}"></div>
+                    <div class="form-group"><label>Gender</label><select id="sw-gender" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-school').focus();}"><option>Boys</option><option>Girls</option></select></div>
+                    <div class="form-group"><label>School</label><select id="sw-school" onchange="autoFillZonal(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-agegroup').focus();}"></select></div>
+                    <div class="form-group"><label>Age Group</label><select id="sw-agegroup" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-ev-1').focus();}"><option value="">Select Age Group</option></select></div>
                     <input type="hidden" id="sw-zonal">
                     <input type="hidden" id="sw-id">
                 </div>
                 <hr style="margin:1.5rem 0; opacity:0.1">
                 <h3>Event Selection</h3>
                 <div class="grid">
-                    <div class="form-group"><label>Event 1</label><select class="sw-event-sel" id="sw-ev-1" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-1" onblur="formatSeedTime(this)"></div>
-                    <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-2" onblur="formatSeedTime(this)"></div>
-                    <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3" onchange="filterAvailableEvents()"></select><input type="text" class="seed-time-input" id="sw-time-3" onblur="formatSeedTime(this)"></div>
+                    <div class="form-group"><label>Event 1</label><select class="sw-event-sel" id="sw-ev-1" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-time-1').focus();}"></select><input type="text" class="seed-time-input" id="sw-time-1" onfocus="this.select()" onblur="formatSeedTime(this)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-ev-2').focus();}"></div>
+                    <div class="form-group"><label>Event 2</label><select class="sw-event-sel" id="sw-ev-2" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-time-2').focus();}"></select><input type="text" class="seed-time-input" id="sw-time-2" onfocus="this.select()" onblur="formatSeedTime(this)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-ev-3').focus();}"></div>
+                    <div class="form-group"><label>Event 3</label><select class="sw-event-sel" id="sw-ev-3" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-time-3').focus();}"></select><input type="text" class="seed-time-input" id="sw-time-3" onfocus="this.select()" onblur="formatSeedTime(this)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('btn-sw-save').focus();}"></div>
                 </div>
                 <div style="display:flex; justify-content:space-between;">
                     <button class="btn btn-secondary" onclick="clearSwimmerForm()">Clear Form</button>
@@ -633,6 +637,7 @@
                 <div><h1>Meet Seeding & Program</h1></div>
                 <div style="display:flex; gap:10px;">
                     <button class="btn btn-primary" onclick="renderSeedingSummary()"><ion-icon name="list-outline"></ion-icon> Entry Summary</button>
+                    <button class="btn btn-secondary" onclick="renderFullMeetProgram()"><ion-icon name="book-outline"></ion-icon> Full Program (Book)</button>
                     <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Seeding</button>
                 </div>
             </header>
@@ -682,8 +687,11 @@
                             <option value="">Select Event</option>
                         </select>
                     </div>
-                    <div style="display:flex; gap:10px;">
-                        <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master Swimmer List</button>
+                    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                        <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master List</button>
+                        <button class="btn btn-secondary" onclick="renderAgeGroupChampions()"><ion-icon name="medal-outline"></ion-icon> Age Champions</button>
+                        <button class="btn btn-secondary" onclick="renderSchoolStandingsReport()"><ion-icon name="business-outline"></ion-icon> School Points</button>
+                        <button class="btn btn-secondary" onclick="renderZonalStandingsReport()"><ion-icon name="map-outline"></ion-icon> Zonal Points</button>
                         <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Report</button>
                     </div>
                 </div>
@@ -1250,9 +1258,10 @@
             document.getElementById('seeding-display-area').innerHTML = html;
         }
 
-        function renderSeeding(no) {
-            no = parseInt(no); if(!no) return;
+        function generateSeedingHTML(no) {
+            no = parseInt(no); if(!no) return "";
             const ev = state.events.find(e=>e.no===no);
+            if(!ev) return "";
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             
             // HY-TEK Style Lane Seeding
@@ -1266,37 +1275,25 @@
             
             const laneConfig = state.settings.lanes == 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
             let chunk = state.settings.lanes || 8;
-            let heatsCount = Math.ceil(sorted.length / chunk);
             
             let html = `
-                <div class="report-header printable">
-                    <p style="float:left">Swim Team Manager</p><p style="float:right">Page 1</p>
-                    <div style="clear:both"></div>
-                    <h2>${state.settings.meetName}</h2>
-                    <p>Meet Program - Seeding</p>
-                </div>
-                <div class="hytek-event-title printable">
-                    <span>Event ${ev.no} ${ev.gender} ${ev.age} ${ev.name}</span>
-                    <span>Direct Final</span>
-                </div>
+                <div class="hytek-event-block">
+                    <div class="hytek-event-title printable">
+                        <span>Event ${ev.no} ${ev.gender} ${ev.age} ${ev.name}</span>
+                        <span>Direct Final</span>
+                    </div>
             `;
 
             if(sorted.length === 0) {
-                html += `<div style="text-align:center; padding: 40px; color: var(--text-dim);">No swimmers currently registered for this event.</div>`;
+                html += `<div style="text-align:center; padding: 20px; color: var(--text-dim);">No swimmers currently registered for this event.</div></div>`;
+                return html;
             }
 
             // Distribute swimmers into heats (Slowest to Fastest)
             let rawHeats = [];
             let swimmersCopy = [...sorted];
-            
-            // Populate full heats from the fastest swimmers first
-            while (swimmersCopy.length > chunk) {
-                rawHeats.push(swimmersCopy.splice(0, chunk));
-            }
-            // Put remaining (slowest) swimmers in their own heat
+            while (swimmersCopy.length > chunk) rawHeats.push(swimmersCopy.splice(0, chunk));
             if (swimmersCopy.length > 0) rawHeats.push(swimmersCopy);
-            
-            // Reverse order: Slowest heat first, Fastest heat last
             rawHeats.reverse();
 
             rawHeats.forEach((heatList, hIndex) => {
@@ -1316,7 +1313,36 @@
                 }
                 html += `</tbody></table>`;
             });
+            html += `</div>`;
+            return html;
+        }
+
+        function renderSeeding(no) {
+            if(!no) return;
+            const header = `
+                <div class="report-header printable">
+                    <p style="float:left">Swim Team Manager</p><p style="float:right">Page 1</p>
+                    <div style="clear:both"></div>
+                    <h2>${state.settings.meetName}</h2>
+                    <p>Meet Program - Seeding</p>
+                </div>`;
+            document.getElementById('seeding-display-area').innerHTML = header + generateSeedingHTML(no);
+        }
+
+        function renderFullMeetProgram() {
+            const sortedEvents = [...state.events].sort((a,b) => a.no - b.no);
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Full Meet Program (Heats & Seeding)</p>
+                </div>`;
+            
+            sortedEvents.forEach(ev => {
+                html += generateSeedingHTML(ev.no);
+            });
+            
             document.getElementById('seeding-display-area').innerHTML = html;
+            document.getElementById('seed-event-jump').value = ""; // Reset dropdown
         }
 
         function renderResultsReport(no) {
@@ -1446,14 +1472,17 @@
             
             document.getElementById('result-entry-area').innerHTML = `
                 <table class="hytek-table">
-                    <thead><tr><th style="width:80px">Heat/Lane</th><th>Swimmer</th><th>Time</th></tr></thead>
+                    <thead><tr><th style="width:80px">Heat/Lane</th><th>Swimmer</th><th style="width:100px">Seed</th><th>Result Time</th></tr></thead>
                     <tbody>
                         ${entryList.map(s => {
+                            const seedInfo = s.evs.find(x => x.no === no);
+                            const seedTime = seedInfo ? seedInfo.t : "NT";
                             const val = existingResults[s.id] ? existingResults[s.id].t : "";
                             return `<tr>
                                 <td style="font-size:0.8rem; color:var(--text-dim)">H${s.h} L${s.l}</td>
                                 <td>${s.short}</td>
-                                <td><input type="text" onblur="formatSeedTime(this)" 
+                                <td style="color:var(--primary-light); font-weight:600;">${seedTime}</td>
+                                <td><input type="text" onfocus="this.select()" onblur="formatSeedTime(this)" 
                                     onkeydown="if(event.key==='Enter'){event.preventDefault(); const tr=this.closest('tr').nextElementSibling; if(tr) tr.querySelector('input').focus();}" 
                                     class="r-inp" data-id="${s.id}" value="${val}" placeholder="MM:SS.ms"></td>
                             </tr>`;
@@ -1477,38 +1506,168 @@
             return e ? `${no} - ${e.name}` : no;
         }
         function calculateStandings() {
-            let sPts = {}, schPts = {};
-            state.swimmers.forEach(s => { sPts[s.id] = 0; if(!schPts[s.school]) schPts[s.school] = { bi:0, gi:0, br:0, gr:0, total:0 }; });
+            let sPts = {}, schPts = {}, zonePts = {};
             
+            // Initialize schools and zones
+            state.schools.forEach(sch => {
+                schPts[sch.name] = { boys: 0, girls: 0, total: 0, zone: sch.zone || "No Zone" };
+                if (sch.zone && !zonePts[sch.zone]) zonePts[sch.zone] = { boys: 0, girls: 0, total: 0 };
+            });
+            if (!zonePts["No Zone"]) zonePts["No Zone"] = { boys: 0, girls: 0, total: 0 };
+
+            // Initialize swimmers
+            state.swimmers.forEach(s => { 
+                sPts[s.id] = 0; 
+                if (!schPts[s.school]) schPts[s.school] = { boys: 0, girls: 0, total: 0, zone: "No Zone" };
+            });
+
             Object.keys(state.results).forEach(no => {
-                const ev = state.events.find(e=>e.no==no);
-                if(!ev) return;
+                const ev = state.events.find(e => e.no == no);
+                if (!ev) return;
                 
                 const results = state.results[no];
                 const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
                 
                 let eventList = [];
                 Object.keys(results).forEach(id => {
-                    if(results[id].t) eventList.push({ id, s: tToSec(results[id].t) });
+                    if (results[id].t && results[id].t !== '-') {
+                        eventList.push({ id, s: tToSec(results[id].t) });
+                    }
                 });
-                eventList.sort((a,b) => a.s - b.s);
+                eventList.sort((a, b) => a.s - b.s);
                 
                 eventList.forEach((r, idx) => {
                     let pts = idx < 8 ? ptArr[idx] : 0;
-                    let id = r.id;
-                    if(sPts[id] !== undefined) sPts[id]+=pts;
-                    let sw = state.swimmers.find(x=>x.id==id);
-                    if(sw) {
-                        let sc = schPts[sw.school];
-                        if(ev.type==='relay') (sw.gender === 'Boys' || sw.gender === 'Male' ? sc.br+=pts : sc.gr+=pts); 
-                        else (sw.gender === 'Boys' || sw.gender === 'Male' ? sc.bi+=pts : sc.gi+=pts);
-                        sc.total+=pts;
+                    if (pts <= 0) return;
+                    
+                    if (sPts[r.id] !== undefined) sPts[r.id] += pts;
+                    
+                    let sw = state.swimmers.find(x => x.id == r.id);
+                    if (sw) {
+                        const gender = (sw.gender === 'Boys' || sw.gender === 'Male') ? 'boys' : 'girls';
+                        schPts[sw.school][gender] += pts;
+                        schPts[sw.school].total += pts;
+                        
+                        const zone = schPts[sw.school].zone || "No Zone";
+                        zonePts[zone][gender] += pts;
+                        zonePts[zone].total += pts;
                     }
                 });
             });
-            document.getElementById('stand-sw-boys').innerHTML = state.swimmers.filter(x=>x.gender==='Boys' || x.gender==='Male').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
-            document.getElementById('stand-sw-girls').innerHTML = state.swimmers.filter(x=>x.gender==='Girls' || x.gender==='Female').map(x=>({s:x.short, p:sPts[x.id]||0})).sort((a,b)=>b.p-a.p).slice(0,5).map(x=>`<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
-            document.getElementById('stand-schools').innerHTML = Object.entries(schPts).sort((a,b)=>b[1].total-a[1].total).map(([n,d],i)=>`<tr><td>${i+1}</td><td>${n}</td><td>${d.bi + d.gi + d.br + d.gr}</td></tr>`).join('');
+
+            // Update Quick View UI
+            const topBoys = state.swimmers.filter(x => x.gender === 'Boys' || x.gender === 'Male')
+                .map(x => ({ s: x.short, p: sPts[x.id] || 0 }))
+                .sort((a, b) => b.p - a.p).slice(0, 5);
+            document.getElementById('stand-sw-boys').innerHTML = topBoys.map(x => `<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+
+            const topGirls = state.swimmers.filter(x => x.gender === 'Girls' || x.gender === 'Female')
+                .map(x => ({ s: x.short, p: sPts[x.id] || 0 }))
+                .sort((a, b) => b.p - a.p).slice(0, 5);
+            document.getElementById('stand-sw-girls').innerHTML = topGirls.map(x => `<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+
+            const sortedSchools = Object.entries(schPts).sort((a, b) => b[1].total - a[1].total);
+            document.getElementById('stand-schools').innerHTML = sortedSchools.map(([n, d], i) => `<tr><td>${i + 1}</td><td>${n}</td><td>${d.total}</td></tr>`).join('');
+            
+            return { sPts, schPts, zonePts };
+        }
+
+        function renderAgeGroupChampions() {
+            const { sPts } = calculateStandings();
+            const ages = [...new Set(state.events.map(e => e.age))].sort((a, b) => {
+                const getNum = x => parseInt(x.match(/\d+/) || 0);
+                return getNum(a) - getNum(b);
+            });
+            
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Individual Age Group Champions</p>
+                </div>`;
+            
+            ages.forEach(age => {
+                html += `
+                <div class="hytek-event-title" style="margin-top:20px; background:var(--glass); color:var(--text-main); border:1px solid var(--glass-border);">
+                    <span>Age Group: ${age}</span>
+                </div>
+                <table class="hytek-table">
+                    <thead><tr><th>Gender</th><th>Champion Swimmer</th><th>School</th><th style="text-align:right">Points</th></tr></thead>
+                    <tbody>`;
+                
+                ['Boys', 'Girls'].forEach(g => {
+                    const swimmers = state.swimmers.filter(s => s.age === age && (g === 'Boys' ? (s.gender === 'Boys' || s.gender === 'Male') : (s.gender === 'Girls' || s.gender === 'Female')))
+                        .map(s => ({ ...s, pts: sPts[s.id] || 0 }))
+                        .sort((a, b) => b.pts - a.pts);
+                    
+                    const champ = swimmers[0];
+                    if (champ && champ.pts > 0) {
+                        html += `<tr><td style="width:100px">${g}</td><td style="font-weight:700">${champ.full}</td><td>${champ.school}</td><td style="text-align:right; font-weight:700">${champ.pts}</td></tr>`;
+                    } else {
+                        html += `<tr><td style="width:100px">${g}</td><td colspan="2" style="color:var(--text-dim)">No points awarded</td><td style="text-align:right">0</td></tr>`;
+                    }
+                });
+                html += `</tbody></table>`;
+            });
+            
+            document.getElementById('reports-display-area').innerHTML = html;
+            document.getElementById('report-filters').style.display = 'none';
+        }
+
+        function renderSchoolStandingsReport() {
+            const { schPts } = calculateStandings();
+            const sorted = Object.entries(schPts).sort((a, b) => b[1].total - a[1].total);
+            
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Overall School Standings</p>
+                </div>
+                <table class="hytek-table">
+                    <thead><tr><th style="width:50px">Rank</th><th>School / Team</th><th style="text-align:right">Boys</th><th style="text-align:right">Girls</th><th style="text-align:right">Total Points</th></tr></thead>
+                    <tbody>`;
+            
+            sorted.forEach(([name, data], i) => {
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td style="font-weight:600">${name}</td>
+                    <td style="text-align:right">${data.boys}</td>
+                    <td style="text-align:right">${data.girls}</td>
+                    <td style="text-align:right; font-weight:700; color:var(--primary-light);">${data.total}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            document.getElementById('reports-display-area').innerHTML = html;
+            document.getElementById('report-filters').style.display = 'none';
+        }
+
+        function renderZonalStandingsReport() {
+            const { zonePts } = calculateStandings();
+            const sorted = Object.entries(zonePts).sort((a, b) => b[1].total - a[1].total);
+            
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Zonal Championship Standings</p>
+                </div>
+                <table class="hytek-table">
+                    <thead><tr><th style="width:50px">Rank</th><th>Zone / Region</th><th style="text-align:right">Boys</th><th style="text-align:right">Girls</th><th style="text-align:right">Total Points</th></tr></thead>
+                    <tbody>`;
+            
+            sorted.forEach(([name, data], i) => {
+                if (name === "No Zone" && data.total === 0) return;
+                html += `<tr>
+                    <td>${i + 1}</td>
+                    <td style="font-weight:600">${name}</td>
+                    <td style="text-align:right">${data.boys}</td>
+                    <td style="text-align:right">${data.girls}</td>
+                    <td style="text-align:right; font-weight:700; color:var(--primary-light);">${data.total}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            document.getElementById('reports-display-area').innerHTML = html;
+            document.getElementById('report-filters').style.display = 'none';
         }
 
         function populateDropdowns() {
