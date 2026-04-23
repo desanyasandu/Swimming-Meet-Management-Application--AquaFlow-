@@ -1270,7 +1270,7 @@
                     <p style="font-size:1rem; margin-top:5px; padding:5px 15px; background:var(--primary); color:white; display:inline-block; border-radius:8px; font-weight:600;">${fg || 'All Genders'} | ${fa || 'All Age Groups'}</p>
                 </div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:40px">#</th><th>Name</th><th>Gender</th><th>School</th><th>Group</th><th>Selected Events</th></tr></thead>
+                    <thead><tr><th style="width:40px">#</th><th style="width:180px">Name</th><th style="width:60px">Gender</th><th style="width:200px">School</th><th style="width:80px">Group</th><th>Selected Events</th></tr></thead>
                     <tbody>
             `;
 
@@ -1336,7 +1336,7 @@
 
                 html += `<div class="hytek-heat-label">Heat ${h} of ${rawHeats.length} Finals</div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px">Lane</th><th>Name</th><th style="width:40px">Yr</th><th>Team</th><th style="width:100px; text-align:right">Seed Time</th></tr></thead>
+                    <thead><tr><th style="width:45px">Lane</th><th style="width:180px">Name</th><th style="width:35px">Yr</th><th style="width:220px">Team</th><th style="width:80px; text-align:right">Seed Time</th></tr></thead>
                     <tbody>`;
                 
                 for(let l=1; l<=state.settings.lanes; l++) {
@@ -1393,6 +1393,7 @@
                 }
             });
             list.sort((a,b) => a.s - b.s);
+            list = list.slice(0, 4);
 
             let html = `
                 <div class="report-header">
@@ -1405,14 +1406,14 @@
                     <span>Event ${ev.no} ${ev.gender} ${ev.age} ${ev.name}</span>
                 </div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px">Rank</th><th>Name</th><th style="width:40px">Yr</th><th>Team</th><th>Seed Time</th><th style="text-align:right">Finals Time</th><th style="width:50px; text-align:right">Pts</th></tr></thead>
+                    <thead><tr><th style="width:40px">Rank</th><th style="width:180px">Name</th><th style="width:30px">Yr</th><th style="width:220px">Team</th><th style="width:75px">Seed Time</th><th style="width:75px; text-align:right">Finals Time</th><th style="width:40px; text-align:right">Pts</th></tr></thead>
                     <tbody>
             `;
 
             list.forEach((r, i) => {
                 const yr = r.sw.dob ? new Date(r.sw.dob).getFullYear().toString().slice(-2) : '14';
                 const seedInfo = r.sw.evs.find(x=>x.no===no);
-                const pts = i < 8 ? ptArr[i] : 0;
+                const pts = i < 4 ? ptArr[i] : 0;
                 html += `<tr>
                     <td>${i+1}</td>
                     <td>${r.sw.short}</td>
@@ -1454,7 +1455,7 @@
                     <p style="font-size:1rem; margin-top:5px; padding:5px 15px; background:var(--primary); color:white; display:inline-block; border-radius:8px; font-weight:600;">${fg || 'All Genders'} | ${fa || 'All Age Groups'}</p>
                 </div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px">No</th><th>Name</th><th>Gender</th><th>Group</th><th>School</th><th>Events</th></tr></thead>
+                    <thead><tr><th style="width:40px">No</th><th style="width:180px">Name</th><th style="width:60px">Gender</th><th style="width:80px">Group</th><th style="width:200px">School</th><th>Events</th></tr></thead>
                     <tbody>
             `;
 
@@ -1505,7 +1506,7 @@
             
             document.getElementById('result-entry-area').innerHTML = `
                 <table class="hytek-table">
-                    <thead><tr><th style="width:80px">Heat/Lane</th><th>Swimmer</th><th style="width:100px">Seed</th><th>Result Time</th></tr></thead>
+                    <thead><tr><th style="width:70px">Heat/Lane</th><th style="width:180px">Swimmer</th><th style="width:80px">Seed</th><th>Result Time</th></tr></thead>
                     <tbody>
                         ${entryList.map(s => {
                             const seedInfo = s.evs.find(x => x.no === no);
@@ -1529,7 +1530,7 @@
             inps.forEach(i => { if(i.value) rs.push({ id: i.dataset.id, t: i.value, s: tToSec(i.value) }); });
             rs.sort((a,b)=>a.s-b.s); if(!state.results[no]) state.results[no] = {};
             const ptArr = state.events.find(e=>e.no===no).type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
-            rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: idx < 8 ? ptArr[idx] : 0 });
+            rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: idx < 4 ? ptArr[idx] : 0 });
             saveData(); showToast("Results Saved Successfully");
         }
 
@@ -1570,7 +1571,7 @@
                 eventList.sort((a, b) => a.s - b.s);
                 
                 eventList.forEach((r, idx) => {
-                    let pts = idx < 8 ? ptArr[idx] : 0;
+                    let pts = idx < 4 ? ptArr[idx] : 0;
                     if (pts <= 0) return;
                     
                     if (sPts[r.id] !== undefined) sPts[r.id] += pts;
@@ -1638,7 +1639,7 @@
                     const swimmers = state.swimmers.filter(s => s.age === age && (g === 'Boys' ? (s.gender === 'Boys' || s.gender === 'Male') : (s.gender === 'Girls' || s.gender === 'Female')))
                         .map(s => ({ ...s, pts: sPts[s.id] || 0 }))
                         .sort((a, b) => b.pts - a.pts)
-                        .slice(0, 3);
+                        .slice(0, 4);
                     
                     if (swimmers.length > 0 && swimmers[0].pts > 0) {
                         swimmers.forEach((s, idx) => {
@@ -1695,9 +1696,9 @@
                             };
                         }).filter(x => x !== null);
                         
-                        // Sort by time and add rank/place
+                        // Sort by time and add rank/place (Limit to top 4)
                         resEntries.sort((a,b) => a.s - b.s);
-                        resEntries.forEach((entry, idx) => {
+                        resEntries.slice(0, 4).forEach((entry, idx) => {
                             resultsList.push({ ...entry, place: idx + 1 });
                         });
                     });
@@ -1719,17 +1720,17 @@
                             <thead>
                                 <tr style="background: #f1f5f9;">
                                     <th style="border: 1px solid black; width: 40px; color: black;">S.No</th>
-                                    <th style="border: 1px solid black; color: black;">Name</th>
-                                    <th style="border: 1px solid black; width: 80px; color: black;">Date of Birth</th>
-                                    <th style="border: 1px solid black; width: 80px; color: black;">Birth Cert No</th>
-                                    <th style="border: 1px solid black; width: 50px; color: black;">Class</th>
-                                    <th style="border: 1px solid black; width: 60px; color: black;">Adm No</th>
-                                    <th style="border: 1px solid black; width: 60px; color: black;">ID No</th>
-                                    <th style="border: 1px solid black; color: black;">School</th>
-                                    <th style="border: 1px solid black; color: black;">Zonal</th>
-                                    <th style="border: 1px solid black; color: black;">Event</th>
+                                    <th style="border: 1px solid black; width: 180px; color: black;">Name</th>
+                                    <th style="border: 1px solid black; width: 75px; color: black;">Date of Birth</th>
+                                    <th style="border: 1px solid black; width: 75px; color: black;">Birth Cert No</th>
+                                    <th style="border: 1px solid black; width: 45px; color: black;">Class</th>
+                                    <th style="border: 1px solid black; width: 55px; color: black;">Adm No</th>
+                                    <th style="border: 1px solid black; width: 55px; color: black;">ID No</th>
+                                    <th style="border: 1px solid black; width: 180px; color: black;">School</th>
+                                    <th style="border: 1px solid black; width: 80px; color: black;">Zonal</th>
+                                    <th style="border: 1px solid black; width: 100px; color: black;">Event</th>
                                     <th style="border: 1px solid black; width: 40px; color: black;">Place</th>
-                                    <th style="border: 1px solid black; width: 80px; color: black;">Timing</th>
+                                    <th style="border: 1px solid black; width: 75px; color: black;">Timing</th>
                                 </tr>
                             </thead>
                             <tbody>
