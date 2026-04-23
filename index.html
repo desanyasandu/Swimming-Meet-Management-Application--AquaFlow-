@@ -610,7 +610,11 @@
                     <div class="form-group"><label>Full Name</label><input type="text" id="sw-fullname" list="swimmer-names-list" oninput="handleNameInput(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-shortname').focus();}"></div>
                     <datalist id="swimmer-names-list"></datalist>
                     <div class="form-group"><label>Short Name</label><input type="text" id="sw-shortname" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-dob').focus();}"></div>
-                    <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-gender').focus();}"></div>
+                    <div class="form-group"><label>Date of Birth</label><input type="text" id="sw-dob" onblur="autoAgeGroup(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-bcno').focus();}"></div>
+                    <div class="form-group"><label>Birth Certificate No</label><input type="text" id="sw-bcno" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-class').focus();}"></div>
+                    <div class="form-group"><label>Class</label><input type="text" id="sw-class" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-admno').focus();}"></div>
+                    <div class="form-group"><label>Admission No</label><input type="text" id="sw-admno" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-idno').focus();}"></div>
+                    <div class="form-group"><label>National ID / Other ID</label><input type="text" id="sw-idno" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-gender').focus();}"></div>
                     <div class="form-group"><label>Gender</label><select id="sw-gender" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-school').focus();}"><option>Boys</option><option>Girls</option></select></div>
                     <div class="form-group"><label>School</label><select id="sw-school" onchange="autoFillZonal(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-agegroup').focus();}"></select></div>
                     <div class="form-group"><label>Age Group</label><select id="sw-agegroup" onchange="filterAvailableEvents()" onkeydown="if(event.key==='Enter'){event.preventDefault(); document.getElementById('sw-ev-1').focus();}"><option value="">Select Age Group</option></select></div>
@@ -692,6 +696,7 @@
                         <button class="btn btn-secondary" onclick="renderAgeGroupChampions()"><ion-icon name="medal-outline"></ion-icon> Age Champions</button>
                         <button class="btn btn-secondary" onclick="renderSchoolStandingsReport()"><ion-icon name="business-outline"></ion-icon> School Points</button>
                         <button class="btn btn-secondary" onclick="renderZonalStandingsReport()"><ion-icon name="map-outline"></ion-icon> Zonal Points</button>
+                        <button class="btn btn-primary" style="background:#059669" onclick="renderOfficialMeritReport()"><ion-icon name="ribbon-outline"></ion-icon> Official Merit List</button>
                         <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Report</button>
                     </div>
                 </div>
@@ -1087,6 +1092,10 @@
                 full: document.getElementById('sw-fullname').value,
                 short: document.getElementById('sw-shortname').value, 
                 dob: document.getElementById('sw-dob').value,
+                bcno: document.getElementById('sw-bcno').value,
+                class: document.getElementById('sw-class').value,
+                admno: document.getElementById('sw-admno').value,
+                idno: document.getElementById('sw-idno').value,
                 school: document.getElementById('sw-school').value, 
                 gender: document.getElementById('sw-gender').value, 
                 age: document.getElementById('sw-agegroup').value, 
@@ -1130,6 +1139,10 @@
             document.getElementById('sw-fullname').value = s.full || s.short;
             document.getElementById('sw-shortname').value = s.short;
             document.getElementById('sw-dob').value = s.dob || "";
+            document.getElementById('sw-bcno').value = s.bcno || "";
+            document.getElementById('sw-class').value = s.class || "";
+            document.getElementById('sw-admno').value = s.admno || "";
+            document.getElementById('sw-idno').value = s.idno || "";
             document.getElementById('sw-gender').value = s.gender;
             
             // Ensure school exists in dropdown
@@ -1178,6 +1191,10 @@
             document.getElementById('sw-fullname').value = "";
             document.getElementById('sw-shortname').value = "";
             document.getElementById('sw-dob').value = "";
+            document.getElementById('sw-bcno').value = "";
+            document.getElementById('sw-class').value = "";
+            document.getElementById('sw-admno').value = "";
+            document.getElementById('sw-idno').value = "";
             document.getElementById('sw-agegroup').value = "";
             for(let i=1; i<=3; i++) {
                 document.getElementById(`sw-ev-${i}`).value = "";
@@ -1646,6 +1663,106 @@
             document.getElementById('report-filters').style.display = 'none';
         }
 
+        function renderOfficialMeritReport() {
+            const ages = [...new Set(state.events.map(e => e.age))].sort((a, b) => {
+                const getNum = x => parseInt(x.match(/\d+/) || 0);
+                return getNum(a) - getNum(b);
+            });
+            
+            let html = `
+                <div class="report-header">
+                    <h2>${state.settings.meetName}</h2>
+                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Official Results Merit List</p>
+                </div>`;
+            
+            ages.forEach(age => {
+                ['Boys', 'Girls'].forEach(gender => {
+                    // Find all event results for this age group and gender
+                    const groupEvents = state.events.filter(e => e.age === age && e.gender === gender);
+                    if (groupEvents.length === 0) return;
+
+                    let resultsList = [];
+                    groupEvents.forEach(ev => {
+                        const eventResults = state.results[ev.no] || {};
+                        const resEntries = Object.entries(eventResults).map(([swId, res]) => {
+                            const sw = state.swimmers.find(s => s.id == swId);
+                            if (!sw) return null;
+                            return {
+                                sw,
+                                event: ev,
+                                t: res.t,
+                                s: tToSec(res.t)
+                            };
+                        }).filter(x => x !== null);
+                        
+                        // Sort by time and add rank/place
+                        resEntries.sort((a,b) => a.s - b.s);
+                        resEntries.forEach((entry, idx) => {
+                            resultsList.push({ ...entry, place: idx + 1 });
+                        });
+                    });
+
+                    if (resultsList.length === 0) return;
+
+                    // Sort results list by Name or School if needed, but usually grouped by event is better? 
+                    // The user's screenshot has Age Group and Gender in the header, then a list.
+                    // Let's sort by Event No, then Place.
+                    resultsList.sort((a, b) => a.event.no !== b.event.no ? a.event.no - b.event.no : a.place - b.place);
+
+                    html += `
+                    <div style="page-break-before: always; margin-top: 30px;">
+                        <div style="display:flex; justify-content:space-between; border: 1px solid black; padding: 5px; background: #f8fafc; font-weight:bold;">
+                            <span>Age Group:- ${age}</span>
+                            <span>Gender:- ${gender}</span>
+                        </div>
+                        <table class="hytek-table" style="border: 1px solid black; margin-top: -1px;">
+                            <thead>
+                                <tr style="background: #f1f5f9;">
+                                    <th style="border: 1px solid black; width: 40px; color: black;">S.No</th>
+                                    <th style="border: 1px solid black; color: black;">Name</th>
+                                    <th style="border: 1px solid black; width: 80px; color: black;">Date of Birth</th>
+                                    <th style="border: 1px solid black; width: 80px; color: black;">Birth Cert No</th>
+                                    <th style="border: 1px solid black; width: 50px; color: black;">Class</th>
+                                    <th style="border: 1px solid black; width: 60px; color: black;">Adm No</th>
+                                    <th style="border: 1px solid black; width: 60px; color: black;">ID No</th>
+                                    <th style="border: 1px solid black; color: black;">School</th>
+                                    <th style="border: 1px solid black; color: black;">Zonal</th>
+                                    <th style="border: 1px solid black; color: black;">Event</th>
+                                    <th style="border: 1px solid black; width: 40px; color: black;">Place</th>
+                                    <th style="border: 1px solid black; width: 80px; color: black;">Timing</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${resultsList.map((r, i) => `
+                                <tr>
+                                    <td style="border: 1px solid black; text-align:center;">${i+1}</td>
+                                    <td style="border: 1px solid black; font-weight:500;">${r.sw.full}</td>
+                                    <td style="border: 1px solid black;">${r.sw.dob || ''}</td>
+                                    <td style="border: 1px solid black;">${r.sw.bcno || ''}</td>
+                                    <td style="border: 1px solid black;">${r.sw.class || ''}</td>
+                                    <td style="border: 1px solid black;">${r.sw.admno || ''}</td>
+                                    <td style="border: 1px solid black;">${r.sw.idno || ''}</td>
+                                    <td style="border: 1px solid black;">${r.sw.school}</td>
+                                    <td style="border: 1px solid black;">${autoFillZonalValue(r.sw.school)}</td>
+                                    <td style="border: 1px solid black;">${r.event.name}</td>
+                                    <td style="border: 1px solid black; text-align:center; font-weight:bold;">${r.place}</td>
+                                    <td style="border: 1px solid black; text-align:right;">${r.t}</td>
+                                </tr>`).join('')}
+                            </tbody>
+                        </table>
+                    </div>`;
+                });
+            });
+
+            document.getElementById('reports-display-area').innerHTML = html;
+            document.getElementById('report-filters').style.display = 'none';
+        }
+
+        function autoFillZonalValue(schoolName) {
+            const s = state.schools.find(x => x.name === schoolName);
+            return s ? s.zone : "";
+        }
+
         function renderSchoolStandingsReport() {
             const { schPts } = calculateStandings();
             
@@ -1889,6 +2006,10 @@
                 Gender: s.gender,
                 AgeGroup: s.age,
                 DOB: s.dob || '',
+                BC_No: s.bcno || '',
+                Class: s.class || '',
+                Adm_No: s.admno || '',
+                ID_No: s.idno || '',
                 Ev1_No: s.evs[0]?.no || '',
                 Time1: s.evs[0]?.t || '',
                 Ev2_No: s.evs[1]?.no || '',
@@ -1989,6 +2110,10 @@
                             else if (ageAliases.some(a => val === a || val.includes(a))) colMap.age = idx;
                             else if (dobAliases.some(a => val === a || val.includes(a))) colMap.dob = idx;
                             else if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
+                            else if (val.includes('bc') || val.includes('birth cert')) colMap.bcno = idx;
+                            else if (val.includes('class')) colMap.class = idx;
+                            else if (val.includes('adm') || val.includes('admission')) colMap.admno = idx;
+                            else if (val.includes('id no') || val.includes('identity')) colMap.idno = idx;
                             
                             // Event handling (supports Event 1, then Seed time, etc)
                             if (eventKeywords.some(k => val.includes(k))) {
@@ -2088,6 +2213,10 @@
                                 school: schoolName, 
                                 gender: String(row[colMap.gender] || "Boys"), 
                                 age: ageVal, 
+                                bcno: String(row[colMap.bcno] || ""),
+                                class: String(row[colMap.class] || ""),
+                                admno: String(row[colMap.admno] || ""),
+                                idno: String(row[colMap.idno] || ""),
                                 evs: swEvs 
                             });
                         } else if (type === 'events' && row[colMap.no]) {
