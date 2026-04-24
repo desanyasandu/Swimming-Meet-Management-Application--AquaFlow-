@@ -572,6 +572,32 @@
             </div>
 
             <div class="card" style="margin-top: 1rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+                    <h3>School Participation Summary</h3>
+                    <button class="btn btn-secondary no-print" onclick="printDashboardSchools()">
+                        <ion-icon name="print-outline"></ion-icon> Print List
+                    </button>
+                </div>
+                <div class="table-responsive printable">
+                    <table class="hytek-table">
+                        <thead>
+                            <tr>
+                                <th style="width:50px">S.No</th>
+                                <th>School Name</th>
+                                <th>Zonal</th>
+                                <th style="text-align:center">Boys</th>
+                                <th style="text-align:center">Girls</th>
+                                <th style="text-align:center">Total Swimmers</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-school-table-body">
+                            <tr><td colspan="6" style="text-align:center; padding:20px;">No data available</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card no-print" style="margin-top: 1rem;">
                 <h3>Recent Activity</h3>
                 <div id="recent-activity" style="margin-top:1rem; color:var(--text-dim);">
                     Manage your swimming meet from the side menu. Start by configuring the Meet Settings.
@@ -966,12 +992,55 @@
             document.getElementById(id).classList.add('active');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             if(event && event.currentTarget) event.currentTarget.classList.add('active');
+            if(id === 'dashboard') { updateStats(); renderDashSchoolTable(); }
             if(id === 'standings') calculateStandings();
             if(id === 'swimmers') filterAvailableEvents();
             if(id === 'seeding') renderSeedingSummary();
             if(id === 'events') updateNextEventNumber();
             if(id === 'settings') loadSettingsIntoForm();
             updateStats();
+        }
+
+        function renderDashSchoolTable() {
+            const schData = {};
+            
+            // Initialize from schools list
+            state.schools.forEach(s => {
+                schData[s.name] = { zone: s.zone, boys: 0, girls: 0, total: 0 };
+            });
+
+            // Count swimmers
+            state.swimmers.forEach(s => {
+                if (!schData[s.school]) {
+                    schData[s.school] = { zone: "Unknown", boys: 0, girls: 0, total: 0 };
+                }
+                const gender = (s.gender === 'Boys' || s.gender === 'Male') ? 'boys' : 'girls';
+                schData[s.school][gender]++;
+                schData[s.school].total++;
+            });
+
+            const sorted = Object.entries(schData).sort((a,b) => b[1].total - a[1].total);
+            
+            const tbody = document.getElementById('dash-school-table-body');
+            if (sorted.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No schools registered</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = sorted.map(([name, data], i) => `
+                <tr>
+                    <td style="text-align:center">${i+1}</td>
+                    <td style="font-weight:600">${name}</td>
+                    <td>${data.zone}</td>
+                    <td style="text-align:center">${data.boys}</td>
+                    <td style="text-align:center">${data.girls}</td>
+                    <td style="text-align:center; font-weight:700; color:var(--primary-light)">${data.total}</td>
+                </tr>
+            `).join('');
+        }
+
+        function printDashboardSchools() {
+            window.print();
         }
 
         function updateStats() {
@@ -1016,6 +1085,12 @@
                 request.onsuccess = () => {
                     if (request.result) {
                         state = request.result;
+                        // Ensure all structures exist for backward compatibility
+                        if (!state.records) state.records = {};
+                        if (!state.results) state.results = {};
+                        if (!state.schools) state.schools = [];
+                        if (!state.swimmers) state.swimmers = [];
+                        if (!state.events) state.events = [];
                     } else {
                         // Migrate from LocalStorage if exists
                         const oldData = localStorage.getItem('aqua_db');
@@ -1029,7 +1104,7 @@
                             resetEventsToDefault();
                         }
                     }
-                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns(); updateNextEventNumber();
+                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns(); updateNextEventNumber(); renderDashSchoolTable();
                     // One-time fix for existing swimmers with incorrect age groups
                     let fixed = false;
                     state.swimmers.forEach(s => {
@@ -2564,10 +2639,10 @@
                 if (importedSchools.length > 0) state.schools = importedSchools;
                 if (importedEvents) state.events = importedEvents;
                 if (importedSwimmers) state.swimmers = importedSwimmers;
-                if (importedRecords) state.records = importedRecords;
+                if (importedRecords) state.records = Object.assign(state.records || {}, importedRecords);
 
                 await saveData();
-                alert(`Import Success!\nSwimmers: ${state.swimmers.length}\nSchools: ${state.schools.length}\nEvents: ${state.events.length}`);
+                alert(`Import Success!\nSwimmers: ${state.swimmers.length}\nSchools: ${state.schools.length}\nEvents: ${state.events.length}\nRecords: ${Object.keys(state.records || {}).length} events`);
                 location.reload();
             };
             reader.readAsArrayBuffer(file);
