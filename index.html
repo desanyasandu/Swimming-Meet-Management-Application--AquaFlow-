@@ -618,6 +618,20 @@
                 </div>
 
                 <div class="card">
+                    <h3>System Security</h3>
+                    <div style="margin-top:1.5rem;">
+                        <div class="form-group">
+                            <label>Admin Username</label>
+                            <input type="text" id="set-admin-user" placeholder="admin">
+                        </div>
+                        <div class="form-group">
+                            <label>Admin Password</label>
+                            <input type="password" id="set-admin-pass" placeholder="••••••••">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
                     <h3>Individual Points</h3>
                     <div class="grid" style="margin-top:1rem; grid-template-columns: repeat(2, 1fr);">
                         <div class="form-group"> <label>1st</label><input type="number" class="point-input" id="pts-i-1" value="10"></div>
@@ -910,8 +924,11 @@
             const u = document.getElementById('login-user').value;
             const p = document.getElementById('login-pass').value;
             
-            // Default Credentials: admin / aqua@2026
-            if (u === 'admin' && p === 'aqua@2026') {
+            // Get credentials from state, fallback to defaults
+            const adminUser = state.settings.username || 'admin';
+            const adminPass = state.settings.password || 'aqua@2026';
+            
+            if (u === adminUser && p === adminPass) {
                 sessionStorage.setItem('aquaflow_auth', 'true');
                 document.body.classList.add('logged-in');
                 showToast("Welcome back, Administrator");
@@ -934,7 +951,13 @@
         }
 
         let state = {
-            settings: { meetName: "Meet 2026", lanes: 8, points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] } },
+            settings: { 
+                meetName: "Meet 2026", 
+                lanes: 8, 
+                points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] },
+                username: 'admin',
+                password: 'aqua@2026'
+            },
             schools: [], events: [], swimmers: [], results: {}, records: {}
         };
 
@@ -2172,18 +2195,34 @@
 
         function loadSettingsIntoForm() {
             document.getElementById('set-meet-name').value = state.settings.meetName || "";
+            document.getElementById('set-meet-date').value = state.settings.meetDate || "";
+            document.getElementById('set-meet-place').value = state.settings.meetPlace || "";
             document.getElementById('set-meet-lanes').value = state.settings.lanes || 8;
+            document.getElementById('set-admin-user').value = state.settings.username || "admin";
+            document.getElementById('set-admin-pass').value = state.settings.password || "aqua@2026";
             
-            const ptsI = state.settings.points.indiv || [10,7,5,4,3,2,1,0];
-            ptsI.forEach((p, i) => { if(document.getElementById(`pts-i-${i+1}`)) document.getElementById(`pts-i-${i+1}`).value = p; });
-            
-            const ptsR = state.settings.points.relay || [20,14,10,8,6,4,2,0];
-            ptsR.forEach((p, i) => { if(document.getElementById(`pts-r-${i+1}`)) document.getElementById(`pts-r-${i+1}`).value = p; });
+            if (state.settings.points) {
+                const ptsI = state.settings.points.indiv || [10,7,5,4,3,2,1,0];
+                ptsI.forEach((p, i) => { 
+                    const el = document.getElementById(`pts-i-${i+1}`);
+                    if(el) el.value = p; 
+                });
+                
+                const ptsR = state.settings.points.relay || [20,14,10,8,6,4,2,0];
+                ptsR.forEach((p, i) => { 
+                    const el = document.getElementById(`pts-r-${i+1}`);
+                    if(el) el.value = p; 
+                });
+            }
         }
 
         function saveSettings() {
             state.settings.meetName = document.getElementById('set-meet-name').value;
+            state.settings.meetDate = document.getElementById('set-meet-date').value;
+            state.settings.meetPlace = document.getElementById('set-meet-place').value;
             state.settings.lanes = parseInt(document.getElementById('set-meet-lanes').value);
+            state.settings.username = document.getElementById('set-admin-user').value;
+            state.settings.password = document.getElementById('set-admin-pass').value;
             
             state.settings.points.indiv = [];
             for(let i=1; i<=8; i++) state.settings.points.indiv.push(parseInt(document.getElementById(`pts-i-${i}`).value) || 0);
