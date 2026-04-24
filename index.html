@@ -519,6 +519,13 @@
                             <input type="file" id="excel-file" style="display:none;" accept=".xlsx, .xls" onchange="importFromExcel(event)">
                         </div>
 
+                        <div style="position:relative;">
+                            <button class="btn btn-secondary" style="padding: 1.2rem 2.5rem; font-size: 1.1rem; border-color: var(--primary); color: var(--primary);" onclick="document.getElementById('record-file').click()">
+                                <ion-icon name="medal-outline"></ion-icon> Upload Meet Records
+                            </button>
+                            <input type="file" id="record-file" style="display:none;" accept=".xlsx, .xls" onchange="importFromExcel(event)">
+                        </div>
+
                         <button class="btn btn-secondary" style="padding: 1.2rem 2.5rem; font-size: 1.1rem; color: var(--error); border-color: var(--error);" onclick="clearAllData()">
                             <ion-icon name="trash-bin-outline"></ion-icon> Reset Meet
                         </button>
@@ -746,7 +753,7 @@
     <script>
         let state = {
             settings: { meetName: "Meet 2026", lanes: 8, points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] } },
-            schools: [], events: [], swimmers: [], results: {}
+            schools: [], events: [], swimmers: [], results: {}, records: {}
         };
 
         function showPage(id) {
@@ -1297,6 +1304,10 @@
             if(!ev) return "";
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             
+            const rec = state.records ? state.records[no] : null;
+            const provRec = rec && rec.provincial ? rec.provincial : null;
+            const natRec = rec && rec.national ? rec.national : null;
+
             // HY-TEK Style Lane Seeding
             let sorted = swimmers.sort((a,b) => {
                 const getT = x => {
@@ -1310,10 +1321,20 @@
             let chunk = state.settings.lanes || 8;
             
             let html = `
-                <div class="hytek-event-block">
-                    <div class="hytek-event-title printable">
-                        <span>Event ${ev.no} ${ev.gender} ${ev.age} ${ev.name}</span>
-                        <span>Direct Final</span>
+                <div class="hytek-event-block" style="margin-top: 20px;">
+                    <div class="report-header printable" style="border-bottom: none; margin-bottom: 0;">
+                        <h2 style="font-size: 1.4rem;">${state.settings.meetName}</h2>
+                        <p style="font-size: 0.9rem;">At ${state.settings.meetPlace || 'Meet Venue'}, ${state.settings.meetDate || 'Meet Date'}</p>
+                    </div>
+
+                    <div class="hytek-event-title printable" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px;">
+                        <span>Event ${ev.no} &nbsp;&nbsp;&nbsp; ${ev.gender} ${ev.age} ${ev.name}</span>
+                        <span>Finals</span>
+                    </div>
+
+                    <div style="font-size: 0.75rem; padding: 2px 5px; border: 1px solid black; border-top: none; color: black; margin-bottom: 10px;">
+                        <p style="margin: 1px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
+                        <p style="margin: 1px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
                     </div>
             `;
 
@@ -1334,15 +1355,22 @@
                 let laneData = {};
                 heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
 
-                html += `<div class="hytek-heat-label">Heat ${h} of ${rawHeats.length} Finals</div>
-                <table class="hytek-table">
-                    <thead><tr><th style="width:45px">Lane</th><th style="width:180px">Name</th><th style="width:35px">Yr</th><th style="width:220px">Team</th><th style="width:80px; text-align:right">Seed Time</th></tr></thead>
+                html += `<div class="hytek-heat-label" style="font-weight: bold; margin-top: 10px;">Heat ${h} of ${rawHeats.length} Finals</div>
+                <table class="hytek-table" style="border: 1px solid black; border-collapse: collapse;">
+                    <thead><tr style="background: #f1f5f9; border-bottom: 1px solid black;"><th style="width:45px; border-right: 1px solid black; text-align: center; color: black;">Lane</th><th style="border-right: 1px solid black; padding-left: 10px; color: black;">Name</th><th style="width:40px; border-right: 1px solid black; text-align: center; color: black;">Age</th><th style="border-right: 1px solid black; padding-left: 10px; color: black;">Team</th><th style="width:80px; text-align:right; padding-right: 10px; color: black;">Seed Time</th></tr></thead>
                     <tbody>`;
                 
                 for(let l=1; l<=state.settings.lanes; l++) {
                     const s = laneData[l];
-                    const yr = s ? (s.dob ? new Date(s.dob).getFullYear().toString().slice(-2) : '14') : '';
-                    html += `<tr><td>${l}</td><td>${s ? s.short : ''}</td><td>${yr}</td><td>${s ? s.school : ''}</td><td style="text-align:right">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td></tr>`;
+                    const birthYearMatch = s && s.dob ? s.dob.match(/\d{4}/) : null;
+                    const ageValue = birthYearMatch ? (2026 - parseInt(birthYearMatch[0])) : '';
+                    html += `<tr style="border-bottom: 1px solid #eee;">
+                        <td style="border-right: 1px solid black; text-align: center;">${l}</td>
+                        <td style="border-right: 1px solid black; padding-left: 10px;">${s ? s.short : ''}</td>
+                        <td style="border-right: 1px solid black; text-align: center;">${ageValue}</td>
+                        <td style="border-right: 1px solid black; padding-left: 10px;">${s ? s.school : ''}</td>
+                        <td style="text-align:right; padding-right: 10px;">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td>
+                    </tr>`;
                 }
                 html += `</tbody></table>`;
             });
@@ -1352,28 +1380,15 @@
 
         function renderSeeding(no) {
             if(!no) return;
-            const header = `
-                <div class="report-header printable">
-                    <p style="float:left">Swim Team Manager</p><p style="float:right">Page 1</p>
-                    <div style="clear:both"></div>
-                    <h2>${state.settings.meetName}</h2>
-                    <p>Meet Program - Seeding</p>
-                </div>`;
-            document.getElementById('seeding-display-area').innerHTML = header + generateSeedingHTML(no);
+            document.getElementById('seeding-display-area').innerHTML = generateSeedingHTML(no);
         }
 
         function renderFullMeetProgram() {
             const sortedEvents = [...state.events].sort((a,b) => a.no - b.no);
-            let html = `
-                <div class="report-header">
-                    <h2>${state.settings.meetName}</h2>
-                    <p style="font-weight:700; font-size:1.2rem; color:var(--primary-light);">Full Meet Program (Heats & Seeding)</p>
-                </div>`;
-            
+            let html = "";
             sortedEvents.forEach(ev => {
                 html += generateSeedingHTML(ev.no);
             });
-            
             document.getElementById('seeding-display-area').innerHTML = html;
             document.getElementById('seed-event-jump').value = ""; // Reset dropdown
         }
@@ -1393,35 +1408,60 @@
                 }
             });
             list.sort((a,b) => a.s - b.s);
-            list = list.slice(0, 4);
+
+            const rec = state.records ? state.records[no] : null;
+            const provRec = rec && rec.provincial ? rec.provincial : null;
+            const natRec = rec && rec.national ? rec.national : null;
 
             let html = `
-                <div class="report-header">
-                    <p style="float:left">Result Manager</p><p style="float:right">Page 1</p>
-                    <div style="clear:both"></div>
-                    <h2>${state.settings.meetName}</h2>
-                    <p>Final Results Report</p>
+                <div class="report-header" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
+                    <h2 style="text-transform: uppercase; font-size: 1.6rem;">${state.settings.meetName}</h2>
+                    <p style="font-size: 1.1rem; margin-top: 5px;">At ${state.settings.meetPlace || 'Meet Venue'}, ${state.settings.meetDate || 'Meet Date'}</p>
                 </div>
-                <div class="hytek-event-title">
-                    <span>Event ${ev.no} ${ev.gender} ${ev.age} ${ev.name}</span>
+                
+                <div class="hytek-event-title" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px; font-size: 1.1rem;">
+                    <span>Event ${ev.no} &nbsp;&nbsp;&nbsp; ${ev.gender} ${ev.age} ${ev.name}</span>
                 </div>
-                <table class="hytek-table">
-                    <thead><tr><th style="width:40px">Rank</th><th style="width:180px">Name</th><th style="width:30px">Yr</th><th style="width:220px">Team</th><th style="width:75px">Seed Time</th><th style="width:75px; text-align:right">Finals Time</th><th style="width:40px; text-align:right">Pts</th></tr></thead>
+
+                <div style="font-size: 0.85rem; padding: 2px 5px; border: 1px solid black; border-top: none; color: black;">
+                    <p style="margin: 2px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
+                    <p style="margin: 2px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
+                </div>
+
+                <table class="hytek-table" style="border: 1px solid black; margin-top: -1px; width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f1f5f9; border-bottom: 1px solid black;">
+                            <th style="border-right: 1px solid black; width: 50px; text-align: center; color: black;">Place</th>
+                            <th style="border-right: 1px solid black; padding-left: 10px; color: black;">Name</th>
+                            <th style="border-right: 1px solid black; width: 50px; text-align: center; color: black;">Age</th>
+                            <th style="border-right: 1px solid black; padding-left: 10px; color: black;">School</th>
+                            <th style="text-align: right; padding-right: 10px; color: black; width: 100px;">Time</th>
+                        </tr>
+                    </thead>
                     <tbody>
             `;
 
             list.forEach((r, i) => {
-                const yr = r.sw.dob ? new Date(r.sw.dob).getFullYear().toString().slice(-2) : '14';
-                const seedInfo = r.sw.evs.find(x=>x.no===no);
-                const pts = i < 4 ? ptArr[i] : 0;
-                html += `<tr>
-                    <td>${i+1}</td>
-                    <td>${r.sw.short}</td>
-                    <td>${yr}</td>
-                    <td>${r.sw.school}</td>
-                    <td>${seedInfo ? seedInfo.t : 'NT'}</td>
-                    <td style="text-align:right; font-weight:bold;">${r.t}</td>
-                    <td style="text-align:right">${pts}</td>
+                const birthYearMatch = r.sw.dob ? r.sw.dob.match(/\d{4}/) : null;
+                const ageValue = birthYearMatch ? (2026 - parseInt(birthYearMatch[0])) : '';
+                
+                // Record Check
+                let isRecord = false;
+                if (provRec && provRec.t) {
+                    if (r.s < tToSec(provRec.t)) isRecord = true;
+                }
+                if (natRec && natRec.t) {
+                    if (r.s < tToSec(natRec.t)) isRecord = true;
+                }
+
+                html += `<tr style="border-bottom: 1px solid #ddd;">
+                    <td style="border-right: 1px solid black; text-align: center;">${i+1}</td>
+                    <td style="border-right: 1px solid black; padding-left: 10px; font-weight: 500;">${r.sw.full}</td>
+                    <td style="border-right: 1px solid black; text-align: center;">${ageValue}</td>
+                    <td style="border-right: 1px solid black; padding-left: 10px;">${r.sw.school}</td>
+                    <td style="text-align: right; padding-right: 10px; font-weight: bold;">
+                        ${r.t} ${isRecord ? '<span style="color:red; margin-left:5px;">R</span>' : ''}
+                    </td>
                 </tr>`;
             });
 
@@ -1705,10 +1745,25 @@
 
                     if (resultsList.length === 0) return;
 
-                    // Sort results list by Name or School if needed, but usually grouped by event is better? 
-                    // The user's screenshot has Age Group and Gender in the header, then a list.
-                    // Let's sort by Event No, then Place.
-                    resultsList.sort((a, b) => a.event.no !== b.event.no ? a.event.no - b.event.no : a.place - b.place);
+                    // Group by Swimmer
+                    let swimmersMap = new Map();
+                    resultsList.forEach(r => {
+                        if (!swimmersMap.has(r.sw.id)) {
+                            swimmersMap.set(r.sw.id, {
+                                sw: r.sw,
+                                results: []
+                            });
+                        }
+                        swimmersMap.get(r.sw.id).results.push(r);
+                    });
+
+                    // Sort swimmers by name
+                    let groupedResults = Array.from(swimmersMap.values()).sort((a, b) => a.sw.full.localeCompare(b.sw.full));
+                    
+                    // Sort each swimmer's results by event number
+                    groupedResults.forEach(gr => {
+                        gr.results.sort((a, b) => a.event.no - b.event.no);
+                    });
 
                     html += `
                     <div style="page-break-before: always; margin-top: 30px;">
@@ -1722,9 +1777,9 @@
                                     <th style="border: 1px solid black; width: 40px; color: black;">S.No</th>
                                     <th style="border: 1px solid black; width: 180px; color: black;">Name</th>
                                     <th style="border: 1px solid black; width: 75px; color: black;">Date of Birth</th>
-                                    <th style="border: 1px solid black; width: 75px; color: black;">Birth Cert No</th>
+                                    <th style="border: 1px solid black; width: 75px; color: black;">Birth Certificate No</th>
                                     <th style="border: 1px solid black; width: 45px; color: black;">Class</th>
-                                    <th style="border: 1px solid black; width: 55px; color: black;">Adm No</th>
+                                    <th style="border: 1px solid black; width: 55px; color: black;">Admission No</th>
                                     <th style="border: 1px solid black; width: 55px; color: black;">ID No</th>
                                     <th style="border: 1px solid black; width: 180px; color: black;">School</th>
                                     <th style="border: 1px solid black; width: 80px; color: black;">Zonal</th>
@@ -1734,21 +1789,26 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                ${resultsList.map((r, i) => `
-                                <tr>
-                                    <td style="border: 1px solid black; text-align:center;">${i+1}</td>
-                                    <td style="border: 1px solid black; font-weight:500;">${r.sw.full}</td>
-                                    <td style="border: 1px solid black;">${r.sw.dob || ''}</td>
-                                    <td style="border: 1px solid black;">${r.sw.bcno || ''}</td>
-                                    <td style="border: 1px solid black;">${r.sw.class || ''}</td>
-                                    <td style="border: 1px solid black;">${r.sw.admno || ''}</td>
-                                    <td style="border: 1px solid black;">${r.sw.idno || ''}</td>
-                                    <td style="border: 1px solid black;">${r.sw.school}</td>
-                                    <td style="border: 1px solid black;">${autoFillZonalValue(r.sw.school)}</td>
-                                    <td style="border: 1px solid black;">${r.event.name}</td>
-                                    <td style="border: 1px solid black; text-align:center; font-weight:bold;">${r.place}</td>
-                                    <td style="border: 1px solid black; text-align:right;">${r.t}</td>
-                                </tr>`).join('')}
+                                ${groupedResults.map((gr, i) => {
+                                    const rowSpan = gr.results.length;
+                                    return gr.results.map((r, ri) => `
+                                    <tr>
+                                        ${ri === 0 ? `
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black; text-align:center;">${i+1}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black; font-weight:500;">${r.sw.full}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.dob || ''}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.bcno || ''}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.class || ''}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.admno || ''}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.idno || ''}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.school}</td>
+                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${autoFillZonalValue(r.sw.school)}</td>
+                                        ` : ''}
+                                        <td style="border: 1px solid black;">${r.event.name}</td>
+                                        <td style="border: 1px solid black; text-align:center; font-weight:bold;">${r.place}</td>
+                                        <td style="border: 1px solid black; text-align:right;">${r.t}</td>
+                                    </tr>`).join('');
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>`;
@@ -2088,6 +2148,7 @@
 
                         if (score.sw > 0 || (score.s >= 1 && row.some(c => String(c).toLowerCase().includes('id')))) { type = 'swimmers'; headerIndex = i; }
                         else if (score.e >= 1 && (row.some(c => String(c).toLowerCase().includes('age')) || row.some(c => String(row[0]).toLowerCase().includes('no')))) { type = 'events'; headerIndex = i; }
+                        else if (row.some(c => String(c).toLowerCase().includes('record'))) { type = 'records'; headerIndex = i; }
                         else if (score.s >= 1 && type !== 'swimmers') { type = 'schools'; headerIndex = i; }
                         
                         if (type) break;
@@ -2226,6 +2287,19 @@
                         } else if (type === 'schools' && row[colMap.name]) {
                             const name = String(row[colMap.name]).trim();
                             if (!importedSchools.find(s => s.name === name)) importedSchools.push({ name: name, zone: String(row[colMap.zone] || "") });
+                        } else if (type === 'records' && row[0]) {
+                            // Record Format: [EventNo, Type(Provincial/National), Time, Year, HolderName, School, Zone]
+                            const evNo = parseInt(row[0]);
+                            const rType = String(row[1]).toLowerCase().includes('prov') ? 'provincial' : 'national';
+                            if (!state.records) state.records = {};
+                            if (!state.records[evNo]) state.records[evNo] = {};
+                            state.records[evNo][rType] = {
+                                t: String(row[2] || ""),
+                                yr: String(row[3] || ""),
+                                holder: String(row[4] || ""),
+                                school: String(row[5] || ""),
+                                zone: String(row[6] || "")
+                            };
                         }
                     }
                 }
