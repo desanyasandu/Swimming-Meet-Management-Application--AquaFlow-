@@ -2113,6 +2113,7 @@
                 let importedSwimmers = null;
                 let importedSchools = [];
                 let importedEvents = null;
+                let importedRecords = null;
 
                 // Keywords for detection
                 const nameAliases = ['competitor name', 'swimmer name', 'full name', 'fullname', 'name', 'swimmer', 'student name'];
@@ -2197,6 +2198,10 @@
                         } else if (type === 'schools') {
                             if (schoolAliases.some(a => val === a || val.includes(a))) colMap.name = idx;
                             if (zoneAliases.some(a => val === a || val.includes(a))) colMap.zone = idx;
+                        } else if (type === 'records') {
+                            if (val.includes('no')) colMap.no = idx;
+                            if (val.includes('province') || val.includes('provincial')) colMap.prov = idx;
+                            if (val.includes('national')) colMap.nat = idx;
                         }
                     });
 
@@ -2287,19 +2292,49 @@
                         } else if (type === 'schools' && row[colMap.name]) {
                             const name = String(row[colMap.name]).trim();
                             if (!importedSchools.find(s => s.name === name)) importedSchools.push({ name: name, zone: String(row[colMap.zone] || "") });
-                        } else if (type === 'records' && row[0]) {
-                            // Record Format: [EventNo, Type(Provincial/National), Time, Year, HolderName, School, Zone]
-                            const evNo = parseInt(row[0]);
-                            const rType = String(row[1]).toLowerCase().includes('prov') ? 'provincial' : 'national';
-                            if (!state.records) state.records = {};
-                            if (!state.records[evNo]) state.records[evNo] = {};
-                            state.records[evNo][rType] = {
-                                t: String(row[2] || ""),
-                                yr: String(row[3] || ""),
-                                holder: String(row[4] || ""),
-                                school: String(row[5] || ""),
-                                zone: String(row[6] || "")
+                        } else if (type === 'records' && (row[colMap.no] !== undefined || row[0] !== undefined)) {
+                            const rawEvNo = row[colMap.no] !== undefined ? row[colMap.no] : row[0];
+                            const evNoMatch = String(rawEvNo).match(/\d+/);
+                            const evNo = evNoMatch ? parseInt(evNoMatch[0]) : NaN;
+                            
+                            if (isNaN(evNo)) continue;
+                            if (!importedRecords) importedRecords = {};
+                            if (!importedRecords[evNo]) importedRecords[evNo] = {};
+
+                            const parseRec = (str) => {
+                                if (!str || String(str).trim() === "" || String(str).toLowerCase().includes('no record')) return null;
+                                // Handle format: TIME(YEAR) HOLDER - SCHOOL
+                                const m = String(str).match(/^([\d:.]+)\s*\((\d{4})\)\s*([^-]+?)\s*-\s*(.*)$/);
+                                if (m) {
+                                    let sPart = m[4].trim();
+                                    let school = sPart, zone = "";
+                                    if (sPart.includes(" - ")) {
+                                        const p = sPart.split(" - ");
+                                        zone = p.pop().trim();
+                                        school = p.join(" - ").trim();
+                                    }
+                                    return { t: m[1].trim(), yr: m[2], holder: m[3].trim(), school: school, zone: zone };
+                                }
+                                // Fallback for simple time string or other formats
+                                return { t: String(str).split('(')[0].trim(), yr: (String(str).match(/\d{4}/) || [""])[0], holder: "", school: "", zone: "" };
                             };
+
+                            if (colMap.prov !== undefined || colMap.nat !== undefined) {
+                                if (colMap.prov !== undefined) {
+                                    const res = parseRec(row[colMap.prov]);
+                                    if (res) importedRecords[evNo].provincial = res;
+                                }
+                                if (colMap.nat !== undefined) {
+                                    const res = parseRec(row[colMap.nat]);
+                                    if (res) importedRecords[evNo].national = res;
+                                }
+                            } else {
+                                // Classic single-column format per row
+                                const rType = String(row[1]).toLowerCase().includes('prov') ? 'provincial' : 'national';
+                                importedRecords[evNo][rType] = {
+                                    t: String(row[2] || ""), yr: String(row[3] || ""), holder: String(row[4] || ""), school: String(row[5] || ""), zone: String(row[6] || "")
+                                };
+                            }
                         }
                     }
                 }
@@ -2307,6 +2342,7 @@
                 if (importedSchools.length > 0) state.schools = importedSchools;
                 if (importedEvents) state.events = importedEvents;
                 if (importedSwimmers) state.swimmers = importedSwimmers;
+                if (importedRecords) state.records = importedRecords;
 
                 await saveData();
                 alert(`Import Success!\nSwimmers: ${state.swimmers.length}\nSchools: ${state.schools.length}\nEvents: ${state.events.length}`);
