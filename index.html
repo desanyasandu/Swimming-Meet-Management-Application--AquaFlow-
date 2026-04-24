@@ -316,7 +316,7 @@
         @media print {
             @page { size: portrait; margin: 1cm; }
             body { background: white; color: black; overflow: visible !important; }
-            .sidebar, .btn, .nav-link, .toast, .no-print, #clock { display: none !important; }
+            .sidebar, .btn, .nav-link, .toast, .no-print, #clock, #login-screen { display: none !important; }
             .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; height: auto !important; overflow: visible !important; }
             .content-container { display: none !important; padding: 0 !important; margin: 0 !important; }
             .content-container.active { display: block !important; }
@@ -331,16 +331,155 @@
             .hytek-event-title { background-color: #e0e0e0 !important; border: 1px solid black !important; -webkit-print-color-adjust: exact; }
             .printable { display: block !important; }
         }
+
+        /* --- Login Screen Styles --- */
+        #login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-dark);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .login-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at top right, #312e81, #0f172a);
+            z-index: -1;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 3rem 2.5rem;
+            border-radius: 32px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: var(--primary);
+            border-radius: 24px;
+            font-size: 3rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .login-header h2 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; color: white; }
+        .login-header p { color: var(--text-dim); margin-bottom: 2.5rem; font-size: 1.1rem; }
+
+        .login-form .form-group { text-align: left; margin-bottom: 1.5rem; }
+        .login-form input { 
+            background: rgba(15, 23, 42, 0.8); 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem 1.2rem;
+            font-size: 1rem;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 1.1rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .login-btn:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .login-btn:active { transform: translateY(0); }
+
+        #main-app {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        body.logged-in #main-app {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        body.logged-in #login-screen {
+            opacity: 0;
+            pointer-events: none;
+            transform: scale(1.1);
+        }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Sidebar -->
-    <aside class="sidebar" id="sidebar">
-        <div class="logo">
-            <ion-icon name="water"></ion-icon>
-            <span>AquaFlow</span>
+    <!-- Login Screen -->
+    <div id="login-screen">
+        <div class="login-bg"></div>
+        <div class="login-card">
+            <div class="login-logo">
+                <ion-icon name="water"></ion-icon>
+            </div>
+            <div class="login-header">
+                <h2>AquaFlow Login</h2>
+                <p>Please enter your credentials to access the meet management system.</p>
+            </div>
+            <div class="login-form">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="login-user" placeholder="Enter username" onkeydown="if(event.key==='Enter') document.getElementById('login-pass').focus()">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-pass" placeholder="Enter password" onkeydown="if(event.key==='Enter') handleLogin()">
+                </div>
+                <button class="login-btn" onclick="handleLogin()">Sign In</button>
+            </div>
+            <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-dim);">AquaFlow v2.4 | Secure Management</p>
         </div>
+    </div>
+
+    <div id="main-app">
+        <!-- Navigation Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="logo">
+                <ion-icon name="water"></ion-icon>
+                <span>AquaFlow</span>
+            </div>
         <ul class="nav-links">
             <li class="nav-item">
                 <a class="nav-link active" onclick="showPage('dashboard')">
@@ -380,6 +519,11 @@
             <li class="nav-item">
                 <a class="nav-link" onclick="showPage('standings')">
                     <ion-icon name="trophy-outline"></ion-icon> Standings
+                </a>
+            </li>
+            <li class="nav-item" style="margin-top: 2rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                <a class="nav-link" onclick="handleLogout()" style="color: var(--error);">
+                    <ion-icon name="log-out-outline"></ion-icon> Logout
                 </a>
             </li>
         </ul>
@@ -592,9 +736,19 @@
 
         <!-- EVENT CATALOG -->
         <div id="events" class="content-container">
-            <header><div><h1>Event Catalog</h1></div><button class="btn btn-secondary" onclick="resetEventsToDefault()">Reset Defaults</button></header>
+            <header>
+                <div><h1>Event Catalog</h1></div>
+                <div style="display:flex; gap:10px;">
+                    <button class="btn btn-secondary" onclick="window.print()"><ion-icon name="print-outline"></ion-icon> Print Program</button>
+                    <button class="btn btn-secondary" onclick="resetEventsToDefault()">Reset Defaults</button>
+                </div>
+            </header>
+            <div class="report-header printable" style="display:none; text-align:center; margin-bottom:20px;">
+                <h2 id="print-ev-meet-name">Meet Event Program</h2>
+                <p>Official Schedule of Events</p>
+            </div>
             <div class="card">
-                <div class="grid" style="grid-template-columns: 1fr 1fr 1fr 2fr auto auto; align-items: flex-end; gap: 10px;">
+                <div class="grid no-print" style="grid-template-columns: 1fr 1fr 1fr 2fr auto auto; align-items: flex-end; gap: 10px;">
                     <div class="form-group" style="margin:0"><label>No</label><input type="number" id="ev-no" placeholder="No"></div>
                     <div class="form-group" style="margin:0"><label>Gender</label><select id="ev-gender"><option>Boys</option><option>Girls</option></select></div>
                     <div class="form-group" style="margin:0"><label>Age</label><select id="ev-age"><option>Under 12</option><option>Under 14</option><option>Under 16</option><option>Under 18</option><option>Under 20</option></select></div>
@@ -603,7 +757,7 @@
                     <button class="btn btn-secondary" onclick="clearEventForm()">Clear</button>
                 </div>
                 <div class="table-responsive" style="margin-top:1.5rem;">
-                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th style="width:100px;">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
+                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th style="width:100px;" class="no-print">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
                 </div>
             </div>
         </div>
@@ -751,6 +905,34 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // --- Authentication Logic ---
+        function handleLogin() {
+            const u = document.getElementById('login-user').value;
+            const p = document.getElementById('login-pass').value;
+            
+            // Default Credentials: admin / aqua@2026
+            if (u === 'admin' && p === 'aqua@2026') {
+                sessionStorage.setItem('aquaflow_auth', 'true');
+                document.body.classList.add('logged-in');
+                showToast("Welcome back, Administrator");
+            } else {
+                alert("Invalid username or password. Please try again.");
+            }
+        }
+
+        function handleLogout() {
+            if(confirm("Are you sure you want to log out?")) {
+                sessionStorage.removeItem('aquaflow_auth');
+                location.reload();
+            }
+        }
+
+        function checkAuth() {
+            if (sessionStorage.getItem('aquaflow_auth') === 'true') {
+                document.body.classList.add('logged-in');
+            }
+        }
+
         let state = {
             settings: { meetName: "Meet 2026", lanes: 8, points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] } },
             schools: [], events: [], swimmers: [], results: {}, records: {}
@@ -774,6 +956,7 @@
             document.getElementById('stat-schools').innerText = state.schools.length;
             document.getElementById('stat-events').innerText = state.events.length;
             document.getElementById('dash-meet-name').innerText = state.settings.meetName;
+            if(document.getElementById('print-ev-meet-name')) document.getElementById('print-ev-meet-name').innerText = state.settings.meetName;
         }
 
         // IndexedDB Initialization
@@ -973,7 +1156,7 @@
                     <td>${e.gender}</td>
                     <td>${e.age}</td>
                     <td>${e.name}</td>
-                    <td>
+                    <td class="no-print">
                         <button class="btn-secondary" onclick="event.stopPropagation(); delEv(${e.no})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
                             <ion-icon name="trash-outline"></ion-icon>
                         </button>
@@ -2351,7 +2534,10 @@
             reader.readAsArrayBuffer(file);
         }
 
-        window.onload = loadData;
+        window.onload = () => {
+            checkAuth();
+            loadData();
+        };
         setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
     </script>
 </body>
