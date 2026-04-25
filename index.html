@@ -796,6 +796,33 @@
                     <button class="btn btn-primary" id="btn-ev-save" onclick="addEvent()">Add</button>
                     <button class="btn btn-secondary" onclick="clearEventForm()">Clear</button>
                 </div>
+                
+                <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; padding:10px; background:rgba(var(--primary-rgb), 0.05); border-radius:8px; border:1px solid var(--glass-border);" class="no-print">
+                    <div style="flex:1; min-width:200px;">
+                        <label style="font-size:0.7rem; font-weight:700; color:var(--primary-light)">MEET RECORD</label>
+                        <div style="display:flex; gap:5px; margin-top:3px;">
+                            <input type="text" id="rec-meet-t" placeholder="Time" style="width:70px; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-meet-h" placeholder="Holder" style="flex:1; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-meet-y" placeholder="Year" style="width:50px; font-size:0.8rem; padding:4px;">
+                        </div>
+                    </div>
+                    <div style="flex:1; min-width:200px;">
+                        <label style="font-size:0.7rem; font-weight:700; color:var(--primary-light)">PROVINCIAL RECORD</label>
+                        <div style="display:flex; gap:5px; margin-top:3px;">
+                            <input type="text" id="rec-prov-t" placeholder="Time" style="width:70px; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-prov-h" placeholder="Holder" style="flex:1; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-prov-y" placeholder="Year" style="width:50px; font-size:0.8rem; padding:4px;">
+                        </div>
+                    </div>
+                    <div style="flex:1; min-width:200px;">
+                        <label style="font-size:0.7rem; font-weight:700; color:var(--primary-light)">NATIONAL RECORD</label>
+                        <div style="display:flex; gap:5px; margin-top:3px;">
+                            <input type="text" id="rec-nat-t" placeholder="Time" style="width:70px; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-nat-h" placeholder="Holder" style="flex:1; font-size:0.8rem; padding:4px;">
+                            <input type="text" id="rec-nat-y" placeholder="Year" style="width:50px; font-size:0.8rem; padding:4px;">
+                        </div>
+                    </div>
+                </div>
                 <div class="table-responsive" style="margin-top:1.5rem;">
                     <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th style="width:100px;" class="no-print">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
                 </div>
@@ -1219,7 +1246,7 @@
                 evNoInput.value = nextNo;
             }
         }
-        function addEvent() {
+        async function addEvent() {
             const no = parseInt(document.getElementById('ev-no').value), g = document.getElementById('ev-gender').value, a = document.getElementById('ev-age').value, n = document.getElementById('ev-name').value;
             if(!no || !n) return;
             
@@ -1232,20 +1259,106 @@
                     state.events[existingIdx] = evData;
                 } else { return; }
             } else {
-                // Secondary Duplicate Check (by details)
-                if(state.events.some(e => e.gender === g && e.age === a && e.name === n)) {
-                    if(!confirm("An exact same event already exists with a different number. Add anyway?")) return;
-                }
                 state.events.push(evData);
+            }
+
+            // Save records if provided
+            const records = (state.records && state.records[no]) ? state.records[no] : {};
+            const types = { meet: 'rec-meet-', provincial: 'rec-prov-', national: 'rec-nat-' };
+            let hasRecords = false;
+            
+            Object.keys(types).forEach(type => {
+                const prefix = types[type];
+                const t = document.getElementById(prefix + 't').value;
+                if(t) {
+                    records[type] = {
+                        t: t,
+                        holder: document.getElementById(prefix + 'h').value,
+                        yr: document.getElementById(prefix + 'y').value,
+                        school: "", zone: ""
+                    };
+                    hasRecords = true;
+                }
+            });
+
+            if(hasRecords) {
+                if(!state.records) state.records = {};
+                state.records[no] = records;
             }
             
             renderEvents(); populateDropdowns(); saveData(); clearEventForm();
-            showToast("Event Successfully Saved!");
+            showToast("Event & Records Saved!");
         }
+
+        function openRecordEditor(no) {
+            const ev = state.events.find(e => e.no == no);
+            if(!ev) return;
+            const recs = (state.records && state.records[no]) ? state.records[no] : {};
+            
+            const html = `
+                <div class="overlay" id="rec-editor-overlay" style="display:flex; align-items:center; justify-content:center;">
+                    <div class="card" style="max-width:500px; width:95%; background:var(--glass-bg); border:1px solid var(--glass-border); backdrop-filter:blur(20px);">
+                        <h3>Edit Records: Event ${no}</h3>
+                        <p style="margin-bottom:1.5rem; font-size:0.9rem; color:var(--text-dim)">${ev.gender} | ${ev.age} | ${ev.name}</p>
+                        
+                        <div style="display:flex; flex-direction:column; gap:15px;">
+                            ${['meet', 'provincial', 'national'].map(type => {
+                                const r = recs[type] || { t:'', holder:'', yr:'' };
+                                return `
+                                <div style="padding:12px; background:rgba(255,255,255,0.05); border-radius:12px; border:1px solid var(--glass-border);">
+                                    <label style="font-weight:700; font-size:0.7rem; text-transform:uppercase; color:var(--primary-light);">${type} Record</label>
+                                    <div style="display:flex; gap:8px; margin-top:8px;">
+                                        <input type="text" id="edit-rec-${type}-t" placeholder="Time" value="${r.t}" style="width:90px; background:rgba(255,255,255,0.05); color:white;">
+                                        <input type="text" id="edit-rec-${type}-h" placeholder="Holder" value="${r.holder}" style="flex:1; background:rgba(255,255,255,0.05); color:white;">
+                                        <input type="text" id="edit-rec-${type}-y" placeholder="Year" value="${r.yr}" style="width:70px; background:rgba(255,255,255,0.05); color:white;">
+                                    </div>
+                                </div>`;
+                            }).join('')}
+                        </div>
+                        
+                        <div style="margin-top:25px; display:flex; gap:12px; justify-content:flex-end;">
+                            <button class="btn btn-secondary" style="border-color:rgba(255,255,255,0.1); color:white;" onclick="document.getElementById('rec-editor-overlay').remove()">Cancel</button>
+                            <button class="btn btn-primary" onclick="saveEventRecords(${no})">Save Records</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        async function saveEventRecords(no) {
+            if(!state.records) state.records = {};
+            const records = state.records[no] || {};
+            
+            ['meet', 'provincial', 'national'].forEach(type => {
+                const t = document.getElementById(`edit-rec-${type}-t`).value;
+                if(t) {
+                    records[type] = {
+                        t: t,
+                        holder: document.getElementById(`edit-rec-${type}-h`).value,
+                        yr: document.getElementById(`edit-rec-${type}-y`).value,
+                        school: "", zone: ""
+                    };
+                } else {
+                    delete records[type];
+                }
+            });
+            
+            state.records[no] = records;
+            await saveData();
+            document.getElementById('rec-editor-overlay').remove();
+            showToast("Records updated successfully");
+            renderEvents();
+        }
+
         function clearEventForm() {
             updateNextEventNumber();
             document.getElementById('ev-name').value = "";
             document.getElementById('btn-ev-save').innerText = "Add";
+            ['rec-meet-t','rec-meet-h','rec-meet-y','rec-prov-t','rec-prov-h','rec-prov-y','rec-nat-t','rec-nat-h','rec-nat-y'].forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.value = "";
+            });
         }
         function renderEvents() {
             state.events.sort((a,b)=>a.no-b.no);
@@ -1256,9 +1369,14 @@
                     <td>${e.age}</td>
                     <td>${e.name}</td>
                     <td class="no-print">
-                        <button class="btn-secondary" onclick="event.stopPropagation(); delEv(${e.no})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
-                            <ion-icon name="trash-outline"></ion-icon>
-                        </button>
+                        <div style="display:flex; gap:5px;">
+                            <button class="btn-secondary" onclick="event.stopPropagation(); openRecordEditor(${e.no})" style="padding:4px 8px; border-radius:8px; font-size:0.75rem; color:var(--primary-light); border-color:rgba(var(--primary-rgb), 0.2)">
+                                Records
+                            </button>
+                            <button class="btn-secondary" onclick="event.stopPropagation(); delEv(${e.no})" style="padding:4px; border-radius:8px; color:var(--error); border-color:rgba(239, 68, 68, 0.2)">
+                                <ion-icon name="trash-outline"></ion-icon>
+                            </button>
+                        </div>
                     </td>
                 </tr>`).join('');
         }
@@ -2182,6 +2300,8 @@
             const girlsIndivRanks = getRanked(entries, d => d.girls.indiv).ranks;
             const girlsRelayRanks = getRanked(entries, d => d.girls.relay).ranks;
 
+            const totalIndivRanks = getRanked(entries, d => d.total.indiv).ranks;
+            const totalRelayRanks = getRanked(entries, d => d.total.relay).ranks;
             const totalRanked = getRanked(entries, d => d.total.total);
             
             let html = `
@@ -2253,7 +2373,17 @@
 
                 <div class="hytek-event-title"><span>Overall Combined School Standings</span></div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px">Rank</th><th>School / Team</th><th style="text-align:right">Indiv Total</th><th style="text-align:right">Relay Total</th><th style="text-align:right">Grand Total</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width:40px">Rank</th>
+                            <th>School / Team</th>
+                            <th style="text-align:center; width:50px; font-size:0.75rem;">Indiv<br>Rank</th>
+                            <th style="text-align:right">Indiv Total</th>
+                            <th style="text-align:center; width:50px; font-size:0.75rem;">Relay<br>Rank</th>
+                            <th style="text-align:right">Relay Total</th>
+                            <th style="text-align:right">Grand Total</th>
+                        </tr>
+                    </thead>
                     <tbody>`;
             
             totalRanked.sorted.forEach(([name, data], i) => {
@@ -2261,7 +2391,9 @@
                 html += `<tr>
                     <td style="text-align:center; font-weight:700;">${totalRank}</td>
                     <td style="font-weight:600">${name}</td>
+                    <td style="text-align:center; color:var(--primary-light)">${totalIndivRanks[name]}</td>
                     <td style="text-align:right">${data.total.indiv}</td>
+                    <td style="text-align:center; color:var(--accent-boy)">${totalRelayRanks[name]}</td>
                     <td style="text-align:right">${data.total.relay}</td>
                     <td style="text-align:right; font-weight:700; color:var(--primary-light);">${data.total.total}</td>
                 </tr>`;
@@ -2340,6 +2472,8 @@
             const girlsIndivRanks = getRanked(entries, d => d.girls.indiv).ranks;
             const girlsRelayRanks = getRanked(entries, d => d.girls.relay).ranks;
 
+            const totalIndivRanks = getRanked(entries, d => d.total.indiv).ranks;
+            const totalRelayRanks = getRanked(entries, d => d.total.relay).ranks;
             const totalRanked = getRanked(entries, d => d.total.total);
             
             let html = `
@@ -2411,7 +2545,17 @@
 
                 <div class="hytek-event-title"><span>Overall Combined Zonal Standings</span></div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px">Rank</th><th>Zone / Region</th><th style="text-align:right">Indiv Total</th><th style="text-align:right">Relay Total</th><th style="text-align:right">Grand Total</th></tr></thead>
+                    <thead>
+                        <tr>
+                            <th style="width:40px">Rank</th>
+                            <th>Zone / Region</th>
+                            <th style="text-align:center; width:50px; font-size:0.75rem;">Indiv<br>Rank</th>
+                            <th style="text-align:right">Indiv Total</th>
+                            <th style="text-align:center; width:50px; font-size:0.75rem;">Relay<br>Rank</th>
+                            <th style="text-align:right">Relay Total</th>
+                            <th style="text-align:right">Grand Total</th>
+                        </tr>
+                    </thead>
                     <tbody>`;
             
             totalRanked.sorted.forEach(([name, data], i) => {
@@ -2419,7 +2563,9 @@
                 html += `<tr>
                     <td style="text-align:center; font-weight:700;">${totalRank}</td>
                     <td style="font-weight:600">${name}</td>
+                    <td style="text-align:center; color:var(--primary-light)">${totalIndivRanks[name]}</td>
                     <td style="text-align:right">${data.total.indiv}</td>
+                    <td style="text-align:center; color:var(--accent-boy)">${totalRelayRanks[name]}</td>
                     <td style="text-align:right">${data.total.relay}</td>
                     <td style="text-align:right; font-weight:700; color:var(--primary-light);">${data.total.total}</td>
                 </tr>`;
