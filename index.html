@@ -1902,7 +1902,8 @@
                     
                     let sw = state.swimmers.find(x => x.id == r.id);
                     if (sw) {
-                        const gender = (sw.gender === 'Boys' || sw.gender === 'Male') ? 'boys' : 'girls';
+                        const swGender = String(sw.gender || "").toLowerCase().trim();
+                        const gender = (swGender === 'boys' || swGender === 'male' || swGender === 'm') ? 'boys' : 'girls';
                         schPts[sw.school][gender] += pts;
                         schPts[sw.school].total += pts;
                         
@@ -1960,10 +1961,14 @@
                     <tbody>`;
                 
                 ['Boys', 'Girls'].forEach(g => {
-                    const swimmers = state.swimmers.filter(s => s.age === age && (g === 'Boys' ? (s.gender === 'Boys' || s.gender === 'Male') : (s.gender === 'Girls' || s.gender === 'Female')))
-                        .map(s => ({ ...s, pts: sPts[String(s.id)] || 0 }))
-                        .sort((a, b) => b.pts - a.pts)
-                        .slice(0, 8);
+                    const swimmers = state.swimmers.filter(s => {
+                        const swGender = String(s.gender || "").toLowerCase().trim();
+                        const isMatch = (g === 'Boys') ? (swGender === 'boys' || swGender === 'male' || swGender === 'm') : (swGender === 'girls' || swGender === 'female' || swGender === 'f');
+                        return s.age === age && isMatch;
+                    })
+                    .map(s => ({ ...s, pts: sPts[String(s.id)] || 0 }))
+                    .sort((a, b) => b.pts - a.pts)
+                    .slice(0, 3);
                     
                     if (swimmers.length > 0 && swimmers[0].pts > 0) {
                         swimmers.forEach((s, idx) => {
@@ -2009,6 +2014,8 @@
                     let resultsList = [];
                     groupEvents.forEach(ev => {
                         const eventResults = state.results[ev.no] || {};
+                        const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
+                        
                         const resEntries = Object.entries(eventResults).map(([swId, res]) => {
                             const sw = state.swimmers.find(s => s.id == swId);
                             if (!sw) return null;
@@ -2055,7 +2062,7 @@
                             <span>Age Group:- ${age}</span>
                             <span>Gender:- ${gender}</span>
                         </div>
-                        <table class="hytek-table">
+                        <table class="hytek-table" style="font-size: 0.75rem; table-layout: fixed; width: 1120px;">
                             <thead>
                                 <tr>
                                     <th style="width: 40px;">S.No</th>
@@ -2111,9 +2118,9 @@
         function renderSchoolStandingsReport() {
             const { schPts } = calculateStandings();
             
-            const sortedBoys = Object.entries(schPts).filter(([n, d]) => d.boys > 0).sort((a, b) => b[1].boys - a[1].boys);
-            const sortedGirls = Object.entries(schPts).filter(([n, d]) => d.girls > 0).sort((a, b) => b[1].girls - a[1].girls);
-            const sortedTotal = Object.entries(schPts).filter(([n, d]) => d.total > 0).sort((a, b) => b[1].total - a[1].total);
+            const sortedBoys = Object.entries(schPts).sort((a, b) => b[1].boys - a[1].boys);
+            const sortedGirls = Object.entries(schPts).sort((a, b) => b[1].girls - a[1].girls);
+            const sortedTotal = Object.entries(schPts).sort((a, b) => b[1].total - a[1].total);
             
             let html = `
                 <div class="report-header">
@@ -2167,9 +2174,9 @@
         function renderZonalStandingsReport() {
             const { zonePts } = calculateStandings();
             
-            const sortedBoys = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone" && d.boys > 0).sort((a, b) => b[1].boys - a[1].boys);
-            const sortedGirls = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone" && d.girls > 0).sort((a, b) => b[1].girls - a[1].girls);
-            const sortedTotal = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone" && d.total > 0).sort((a, b) => b[1].total - a[1].total);
+            const sortedBoys = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].boys - a[1].boys);
+            const sortedGirls = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].girls - a[1].girls);
+            const sortedTotal = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].total - a[1].total);
             
             let html = `
                 <div class="report-header">
