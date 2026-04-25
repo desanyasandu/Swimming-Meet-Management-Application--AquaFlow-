@@ -304,9 +304,9 @@
             justify-content: space-between;
         }
 
-        .hytek-table { width: 100%; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem; }
-        .hytek-table th { border-bottom: 1px solid black; text-align: left; padding: 4px; color: black; font-weight: 700; text-transform: none; background: transparent; }
-        .hytek-table td { padding: 4px; border: none; }
+        .hytek-table { width: 100%; border-collapse: collapse; color: var(--text-main); font-size: 0.9rem; table-layout: auto; }
+        .hytek-table th { border: 1px solid black !important; text-align: left; padding: 6px 4px; color: black; font-weight: 700; text-transform: none; background: #f1f5f9; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; }
+        .hytek-table td { padding: 6px 4px; border: 1px solid black !important; word-wrap: break-word; overflow-wrap: break-word; white-space: normal; vertical-align: top; }
         .hytek-heat-label { font-weight: 700; padding: 10px 0 5px 5px; color: black; border-bottom: 1px solid #ddd; }
         .hytek-event-block { margin-bottom: 40px; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 20px; }
         @media print {
@@ -324,11 +324,11 @@
             .table-responsive { overflow: visible !important; border: none !important; }
             table { width: 100% !important; border-collapse: collapse !important; }
             th, td { color: black !important; border-bottom: 1px solid #ddd !important; -webkit-print-color-adjust: exact; }
-            .hytek-table { border: 1px solid black !important; font-size: 10pt !important; width: 100% !important; table-layout: fixed !important; }
-            .hytek-table th { border-bottom: 1px solid black !important; padding: 6px 4px !important; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; }
-            .hytek-table td { padding: 4px !important; border: none !important; vertical-align: top !important; }
+            .hytek-table { border: 1px solid black !important; font-size: 10pt !important; width: 100% !important; table-layout: auto !important; }
+            .hytek-table th { border: 1px solid black !important; padding: 6px 4px !important; background-color: #f0f0f0 !important; -webkit-print-color-adjust: exact; word-wrap: break-word; }
+            .hytek-table td { padding: 4px !important; border: 1px solid black !important; vertical-align: top !important; word-wrap: break-word; }
             .report-header { margin-bottom: 20px !important; border-bottom: 2px solid black !important; padding-bottom: 10px !important; }
-            .hytek-event-title { background-color: #e0e0e0 !important; border: 1px solid black !important; -webkit-print-color-adjust: exact; }
+            .hytek-event-title { background-color: #e0e0e0 !important; border: 1px solid black !important; -webkit-print-color-adjust: exact; padding: 5px 10px !important; }
             .printable { display: block !important; }
         }
 
@@ -1104,7 +1104,7 @@
                             resetEventsToDefault();
                         }
                     }
-                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns(); updateNextEventNumber(); renderDashSchoolTable();
+                    renderSchools(); renderEvents(); renderSwimmers(); populateDropdowns(); updateNextEventNumber(); renderDashSchoolTable(); calculateStandings();
                     // One-time fix for existing swimmers with incorrect age groups
                     let fixed = false;
                     state.swimmers.forEach(s => {
@@ -1637,20 +1637,20 @@
                 heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
 
                 html += `<div class="hytek-heat-label" style="font-weight: bold; margin-top: 10px;">Heat ${h} of ${rawHeats.length} Finals</div>
-                <table class="hytek-table" style="border: 1px solid black; border-collapse: collapse;">
-                    <thead><tr style="background: #f1f5f9; border-bottom: 1px solid black;"><th style="width:45px; border-right: 1px solid black; text-align: center; color: black;">Lane</th><th style="border-right: 1px solid black; padding-left: 10px; color: black;">Name</th><th style="width:40px; border-right: 1px solid black; text-align: center; color: black;">Age</th><th style="border-right: 1px solid black; padding-left: 10px; color: black;">Team</th><th style="width:80px; text-align:right; padding-right: 10px; color: black;">Seed Time</th></tr></thead>
+                <table class="hytek-table">
+                    <thead><tr><th style="width:50px; text-align: center;">Lane</th><th>Name</th><th style="width:50px; text-align: center;">Age</th><th>Team</th><th style="width:100px; text-align:right;">Seed Time</th></tr></thead>
                     <tbody>`;
                 
                 for(let l=1; l<=state.settings.lanes; l++) {
                     const s = laneData[l];
                     const birthYearMatch = s && s.dob ? s.dob.match(/\d{4}/) : null;
                     const ageValue = birthYearMatch ? (2026 - parseInt(birthYearMatch[0])) : '';
-                    html += `<tr style="border-bottom: 1px solid #eee;">
-                        <td style="border-right: 1px solid black; text-align: center;">${l}</td>
-                        <td style="border-right: 1px solid black; padding-left: 10px;">${s ? s.short : ''}</td>
-                        <td style="border-right: 1px solid black; text-align: center;">${ageValue}</td>
-                        <td style="border-right: 1px solid black; padding-left: 10px;">${s ? s.school : ''}</td>
-                        <td style="text-align:right; padding-right: 10px;">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td>
+                    html += `<tr>
+                        <td style="text-align: center;">${l}</td>
+                        <td>${s ? s.short : ''}</td>
+                        <td style="text-align: center;">${ageValue}</td>
+                        <td>${s ? s.school : ''}</td>
+                        <td style="text-align:right;">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td>
                     </tr>`;
                 }
                 html += `</tbody></table>`;
@@ -1709,14 +1709,14 @@
                     <p style="margin: 2px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
                 </div>
 
-                <table class="hytek-table" style="border: 1px solid black; margin-top: -1px; width: 100%; border-collapse: collapse;">
+                <table class="hytek-table">
                     <thead>
-                        <tr style="background: #f1f5f9; border-bottom: 1px solid black;">
-                            <th style="border-right: 1px solid black; width: 50px; text-align: center; color: black;">Place</th>
-                            <th style="border-right: 1px solid black; padding-left: 10px; color: black;">Name</th>
-                            <th style="border-right: 1px solid black; width: 50px; text-align: center; color: black;">Age</th>
-                            <th style="border-right: 1px solid black; padding-left: 10px; color: black;">School</th>
-                            <th style="text-align: right; padding-right: 10px; color: black; width: 100px;">Time</th>
+                        <tr>
+                            <th style="width: 50px; text-align: center;">Place</th>
+                            <th>Name</th>
+                            <th style="width: 50px; text-align: center;">Age</th>
+                            <th>School</th>
+                            <th style="text-align: right; width: 100px;">Time</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1735,12 +1735,12 @@
                     if (r.s < tToSec(natRec.t)) isRecord = true;
                 }
 
-                html += `<tr style="border-bottom: 1px solid #ddd;">
-                    <td style="border-right: 1px solid black; text-align: center;">${i+1}</td>
-                    <td style="border-right: 1px solid black; padding-left: 10px; font-weight: 500;">${r.sw.full}</td>
-                    <td style="border-right: 1px solid black; text-align: center;">${ageValue}</td>
-                    <td style="border-right: 1px solid black; padding-left: 10px;">${r.sw.school}</td>
-                    <td style="text-align: right; padding-right: 10px; font-weight: bold;">
+                html += `<tr>
+                    <td style="text-align: center;">${i+1}</td>
+                    <td style="font-weight: 600;">${r.sw.full}</td>
+                    <td style="text-align: center;">${ageValue}</td>
+                    <td>${r.sw.school}</td>
+                    <td style="text-align: right; font-weight: bold;">
                         ${r.t} ${isRecord ? '<span style="color:red; margin-left:5px;">R</span>' : ''}
                     </td>
                 </tr>`;
@@ -1851,7 +1851,8 @@
             inps.forEach(i => { if(i.value) rs.push({ id: i.dataset.id, t: i.value, s: tToSec(i.value) }); });
             rs.sort((a,b)=>a.s-b.s); if(!state.results[no]) state.results[no] = {};
             const ptArr = state.events.find(e=>e.no===no).type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
-            rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: idx < 4 ? ptArr[idx] : 0 });
+            rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: (idx < ptArr.length) ? ptArr[idx] : 0 });
+            calculateStandings();
             saveData(); showToast("Results Saved Successfully");
         }
 
@@ -1872,7 +1873,8 @@
 
             // Initialize swimmers
             state.swimmers.forEach(s => { 
-                sPts[s.id] = 0; 
+                const sid = String(s.id);
+                sPts[sid] = 0; 
                 if (!schPts[s.school]) schPts[s.school] = { boys: 0, girls: 0, total: 0, zone: "No Zone" };
             });
 
@@ -1892,10 +1894,11 @@
                 eventList.sort((a, b) => a.s - b.s);
                 
                 eventList.forEach((r, idx) => {
-                    let pts = idx < 4 ? ptArr[idx] : 0;
+                    let pts = (idx < ptArr.length) ? ptArr[idx] : 0;
                     if (pts <= 0) return;
                     
-                    if (sPts[r.id] !== undefined) sPts[r.id] += pts;
+                    const sid = String(r.id);
+                    if (sPts[sid] !== undefined) sPts[sid] += pts;
                     
                     let sw = state.swimmers.find(x => x.id == r.id);
                     if (sw) {
@@ -1912,14 +1915,14 @@
 
             // Update Quick View UI
             const topBoys = state.swimmers.filter(x => x.gender === 'Boys' || x.gender === 'Male')
-                .map(x => ({ s: x.short, p: sPts[x.id] || 0 }))
-                .sort((a, b) => b.p - a.p).slice(0, 5);
-            document.getElementById('stand-sw-boys').innerHTML = topBoys.map(x => `<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+                .map(x => ({ s: x.short, p: sPts[String(x.id)] || 0 }))
+                .sort((a, b) => b.p - a.p).slice(0, 10);
+            document.getElementById('stand-sw-boys').innerHTML = topBoys.map(x => `<tr><td>${x.s}</td><td style="text-align:right; font-weight:700; color:var(--primary-light)">${x.p}</td></tr>`).join('');
 
             const topGirls = state.swimmers.filter(x => x.gender === 'Girls' || x.gender === 'Female')
-                .map(x => ({ s: x.short, p: sPts[x.id] || 0 }))
-                .sort((a, b) => b.p - a.p).slice(0, 5);
-            document.getElementById('stand-sw-girls').innerHTML = topGirls.map(x => `<tr><td>${x.s}</td><td>${x.p}</td></tr>`).join('');
+                .map(x => ({ s: x.short, p: sPts[String(x.id)] || 0 }))
+                .sort((a, b) => b.p - a.p).slice(0, 10);
+            document.getElementById('stand-sw-girls').innerHTML = topGirls.map(x => `<tr><td>${x.s}</td><td style="text-align:right; font-weight:700; color:var(--accent-girl)">${x.p}</td></tr>`).join('');
 
             const sortedSchools = Object.entries(schPts).sort((a, b) => b[1].total - a[1].total);
             document.getElementById('stand-schools').innerHTML = sortedSchools.map(([n, d], i) => `
@@ -1958,9 +1961,9 @@
                 
                 ['Boys', 'Girls'].forEach(g => {
                     const swimmers = state.swimmers.filter(s => s.age === age && (g === 'Boys' ? (s.gender === 'Boys' || s.gender === 'Male') : (s.gender === 'Girls' || s.gender === 'Female')))
-                        .map(s => ({ ...s, pts: sPts[s.id] || 0 }))
+                        .map(s => ({ ...s, pts: sPts[String(s.id)] || 0 }))
                         .sort((a, b) => b.pts - a.pts)
-                        .slice(0, 4);
+                        .slice(0, 8);
                     
                     if (swimmers.length > 0 && swimmers[0].pts > 0) {
                         swimmers.forEach((s, idx) => {
@@ -2017,9 +2020,9 @@
                             };
                         }).filter(x => x !== null);
                         
-                        // Sort by time and add rank/place (Limit to top 4)
+                        // Sort by time and add rank/place (Use settings limit)
                         resEntries.sort((a,b) => a.s - b.s);
-                        resEntries.slice(0, 4).forEach((entry, idx) => {
+                        resEntries.slice(0, ptArr.length).forEach((entry, idx) => {
                             resultsList.push({ ...entry, place: idx + 1 });
                         });
                     });
@@ -2052,21 +2055,21 @@
                             <span>Age Group:- ${age}</span>
                             <span>Gender:- ${gender}</span>
                         </div>
-                        <table class="hytek-table" style="border: 1px solid black; margin-top: -1px;">
+                        <table class="hytek-table">
                             <thead>
-                                <tr style="background: #f1f5f9;">
-                                    <th style="border: 1px solid black; width: 40px; color: black;">S.No</th>
-                                    <th style="border: 1px solid black; width: 180px; color: black;">Name</th>
-                                    <th style="border: 1px solid black; width: 75px; color: black;">Date of Birth</th>
-                                    <th style="border: 1px solid black; width: 75px; color: black;">Birth Certificate No</th>
-                                    <th style="border: 1px solid black; width: 45px; color: black;">Class</th>
-                                    <th style="border: 1px solid black; width: 55px; color: black;">Admission No</th>
-                                    <th style="border: 1px solid black; width: 55px; color: black;">ID No</th>
-                                    <th style="border: 1px solid black; width: 180px; color: black;">School</th>
-                                    <th style="border: 1px solid black; width: 80px; color: black;">Zonal</th>
-                                    <th style="border: 1px solid black; width: 100px; color: black;">Event</th>
-                                    <th style="border: 1px solid black; width: 40px; color: black;">Place</th>
-                                    <th style="border: 1px solid black; width: 75px; color: black;">Timing</th>
+                                <tr>
+                                    <th style="width: 40px;">S.No</th>
+                                    <th style="width: 180px;">Name</th>
+                                    <th style="width: 80px;">Date of Birth</th>
+                                    <th style="width: 100px;">Birth Certificate No</th>
+                                    <th style="width: 50px;">Class</th>
+                                    <th style="width: 70px;">Admission No</th>
+                                    <th style="width: 70px;">ID No</th>
+                                    <th style="width: 180px;">School</th>
+                                    <th style="width: 100px;">Zonal</th>
+                                    <th style="width: 120px;">Event</th>
+                                    <th style="width: 45px;">Place</th>
+                                    <th style="width: 85px;">Timing</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -2075,19 +2078,19 @@
                                     return gr.results.map((r, ri) => `
                                     <tr>
                                         ${ri === 0 ? `
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black; text-align:center;">${i+1}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black; font-weight:500;">${r.sw.full}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.dob || ''}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.bcno || ''}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.class || ''}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.admno || ''}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.idno || ''}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${r.sw.school}</td>
-                                        <td rowspan="${rowSpan}" style="border: 1px solid black;">${autoFillZonalValue(r.sw.school)}</td>
+                                        <td rowspan="${rowSpan}" style="text-align:center;">${i+1}</td>
+                                        <td rowspan="${rowSpan}" style="font-weight:600;">${r.sw.full}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.dob || ''}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.bcno || ''}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.class || ''}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.admno || ''}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.idno || ''}</td>
+                                        <td rowspan="${rowSpan}">${r.sw.school}</td>
+                                        <td rowspan="${rowSpan}">${autoFillZonalValue(r.sw.school)}</td>
                                         ` : ''}
-                                        <td style="border: 1px solid black;">${r.event.name}</td>
-                                        <td style="border: 1px solid black; text-align:center; font-weight:bold;">${r.place}</td>
-                                        <td style="border: 1px solid black; text-align:right;">${r.t}</td>
+                                        <td>${r.event.name}</td>
+                                        <td style="text-align:center; font-weight:bold;">${r.place}</td>
+                                        <td style="text-align:right;">${r.t}</td>
                                     </tr>`).join('');
                                 }).join('')}
                             </tbody>
