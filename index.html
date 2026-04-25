@@ -2155,10 +2155,34 @@
 
         function renderSchoolStandingsReport() {
             const { schPts } = calculateStandings();
-            
-            const sortedBoys = Object.entries(schPts).sort((a, b) => b[1].boys.total - a[1].boys.total);
-            const sortedGirls = Object.entries(schPts).sort((a, b) => b[1].girls.total - a[1].girls.total);
-            const sortedTotal = Object.entries(schPts).sort((a, b) => b[1].total.total - a[1].total.total);
+            const entries = Object.entries(schPts);
+
+            // Function to assign ranks based on a score accessor
+            const getRanked = (list, accessor) => {
+                const sorted = [...list].sort((a, b) => accessor(b[1]) - accessor(a[1]));
+                let ranks = {};
+                let currentRank = 0;
+                let lastScore = -1;
+                sorted.forEach((item, i) => {
+                    const score = accessor(item[1]);
+                    if (score !== lastScore) {
+                        currentRank = i + 1;
+                        lastScore = score;
+                    }
+                    ranks[item[0]] = score > 0 ? currentRank : '-';
+                });
+                return { sorted, ranks };
+            };
+
+            const boysRanked = getRanked(entries, d => d.boys.total);
+            const boysIndivRanks = getRanked(entries, d => d.boys.indiv).ranks;
+            const boysRelayRanks = getRanked(entries, d => d.boys.relay).ranks;
+
+            const girlsRanked = getRanked(entries, d => d.girls.total);
+            const girlsIndivRanks = getRanked(entries, d => d.girls.indiv).ranks;
+            const girlsRelayRanks = getRanked(entries, d => d.girls.relay).ranks;
+
+            const totalRanked = getRanked(entries, d => d.total.total);
             
             let html = `
                 <div class="report-header">
@@ -2170,20 +2194,58 @@
                     <div>
                         <div class="hytek-event-title"><span>Boys Ranking</span></div>
                         <table class="hytek-table">
-                            <thead><tr><th style="width:50px">Rank</th><th>School / Team</th><th style="text-align:right">Indiv</th><th style="text-align:right">Relay</th><th style="text-align:right">Total</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">Rank</th>
+                                    <th>School / Team</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Indiv<br>Rank</th>
+                                    <th style="text-align:right">Indiv</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Relay<br>Rank</th>
+                                    <th style="text-align:right">Relay</th>
+                                    <th style="text-align:right">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                ${sortedBoys.map(([name, data], i) => `<tr><td>${i+1}</td><td style="font-weight:600">${name}</td><td style="text-align:right">${data.boys.indiv}</td><td style="text-align:right">${data.boys.relay}</td><td style="text-align:right; font-weight:700;">${data.boys.total}</td></tr>`).join('')}
-                                ${sortedBoys.length === 0 ? '<tr><td colspan="5" style="text-align:center">No points recorded</td></tr>' : ''}
+                                ${boysRanked.sorted.map(([name, data], i) => {
+                                    const totalRank = data.boys.total > 0 ? (i+1) : '-';
+                                    return `<tr>
+                                        <td style="text-align:center; font-weight:700;">${totalRank}</td>
+                                        <td style="font-weight:600">${name}</td>
+                                        <td style="text-align:center; color:var(--primary-light)">${boysIndivRanks[name]}</td>
+                                        <td style="text-align:right">${data.boys.indiv}</td>
+                                        <td style="text-align:center; color:var(--accent-boy)">${boysRelayRanks[name]}</td>
+                                        <td style="text-align:right">${data.boys.relay}</td>
+                                        <td style="text-align:right; font-weight:700;">${data.boys.total}</td>
+                                    </tr>`}).join('')}
                             </tbody>
                         </table>
                     </div>
                     <div>
                         <div class="hytek-event-title"><span>Girls Ranking</span></div>
                         <table class="hytek-table">
-                            <thead><tr><th style="width:50px">Rank</th><th>School / Team</th><th style="text-align:right">Indiv</th><th style="text-align:right">Relay</th><th style="text-align:right">Total</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">Rank</th>
+                                    <th>School / Team</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Indiv<br>Rank</th>
+                                    <th style="text-align:right">Indiv</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Relay<br>Rank</th>
+                                    <th style="text-align:right">Relay</th>
+                                    <th style="text-align:right">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                ${sortedGirls.map(([name, data], i) => `<tr><td>${i+1}</td><td style="font-weight:600">${name}</td><td style="text-align:right">${data.girls.indiv}</td><td style="text-align:right">${data.girls.relay}</td><td style="text-align:right; font-weight:700;">${data.girls.total}</td></tr>`).join('')}
-                                ${sortedGirls.length === 0 ? '<tr><td colspan="5" style="text-align:center">No points recorded</td></tr>' : ''}
+                                ${girlsRanked.sorted.map(([name, data], i) => {
+                                    const totalRank = data.girls.total > 0 ? (i+1) : '-';
+                                    return `<tr>
+                                        <td style="text-align:center; font-weight:700;">${totalRank}</td>
+                                        <td style="font-weight:600">${name}</td>
+                                        <td style="text-align:center; color:var(--accent-girl)">${girlsIndivRanks[name]}</td>
+                                        <td style="text-align:right">${data.girls.indiv}</td>
+                                        <td style="text-align:center; color:var(--primary-light)">${girlsRelayRanks[name]}</td>
+                                        <td style="text-align:right">${data.girls.relay}</td>
+                                        <td style="text-align:right; font-weight:700;">${data.girls.total}</td>
+                                    </tr>`}).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -2194,9 +2256,10 @@
                     <thead><tr><th style="width:50px">Rank</th><th>School / Team</th><th style="text-align:right">Indiv Total</th><th style="text-align:right">Relay Total</th><th style="text-align:right">Grand Total</th></tr></thead>
                     <tbody>`;
             
-            sortedTotal.forEach(([name, data], i) => {
+            totalRanked.sorted.forEach(([name, data], i) => {
+                const totalRank = data.total.total > 0 ? (i+1) : '-';
                 html += `<tr>
-                    <td>${i + 1}</td>
+                    <td style="text-align:center; font-weight:700;">${totalRank}</td>
                     <td style="font-weight:600">${name}</td>
                     <td style="text-align:right">${data.total.indiv}</td>
                     <td style="text-align:right">${data.total.relay}</td>
@@ -2251,10 +2314,33 @@
 
         function renderZonalStandingsReport() {
             const { zonePts } = calculateStandings();
-            
-            const sortedBoys = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].boys.total - a[1].boys.total);
-            const sortedGirls = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].girls.total - a[1].girls.total);
-            const sortedTotal = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone").sort((a, b) => b[1].total.total - a[1].total.total);
+            const entries = Object.entries(zonePts).filter(([n, d]) => n !== "No Zone");
+
+            const getRanked = (list, accessor) => {
+                const sorted = [...list].sort((a, b) => accessor(b[1]) - accessor(a[1]));
+                let ranks = {};
+                let currentRank = 0;
+                let lastScore = -1;
+                sorted.forEach((item, i) => {
+                    const score = accessor(item[1]);
+                    if (score !== lastScore) {
+                        currentRank = i + 1;
+                        lastScore = score;
+                    }
+                    ranks[item[0]] = score > 0 ? currentRank : '-';
+                });
+                return { sorted, ranks };
+            };
+
+            const boysRanked = getRanked(entries, d => d.boys.total);
+            const boysIndivRanks = getRanked(entries, d => d.boys.indiv).ranks;
+            const boysRelayRanks = getRanked(entries, d => d.boys.relay).ranks;
+
+            const girlsRanked = getRanked(entries, d => d.girls.total);
+            const girlsIndivRanks = getRanked(entries, d => d.girls.indiv).ranks;
+            const girlsRelayRanks = getRanked(entries, d => d.girls.relay).ranks;
+
+            const totalRanked = getRanked(entries, d => d.total.total);
             
             let html = `
                 <div class="report-header">
@@ -2266,20 +2352,58 @@
                     <div>
                         <div class="hytek-event-title"><span>Boys Zonal Ranking</span></div>
                         <table class="hytek-table">
-                            <thead><tr><th style="width:50px">Rank</th><th>Zone / Region</th><th style="text-align:right">Indiv</th><th style="text-align:right">Relay</th><th style="text-align:right">Total</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">Rank</th>
+                                    <th>Zone / Region</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Indiv<br>Rank</th>
+                                    <th style="text-align:right">Indiv</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Relay<br>Rank</th>
+                                    <th style="text-align:right">Relay</th>
+                                    <th style="text-align:right">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                ${sortedBoys.map(([name, data], i) => `<tr><td>${i+1}</td><td style="font-weight:600">${name}</td><td style="text-align:right">${data.boys.indiv}</td><td style="text-align:right">${data.boys.relay}</td><td style="text-align:right; font-weight:700;">${data.boys.total}</td></tr>`).join('')}
-                                ${sortedBoys.length === 0 ? '<tr><td colspan="5" style="text-align:center">No points recorded</td></tr>' : ''}
+                                ${boysRanked.sorted.map(([name, data], i) => {
+                                    const totalRank = data.boys.total > 0 ? (i+1) : '-';
+                                    return `<tr>
+                                        <td style="text-align:center; font-weight:700;">${totalRank}</td>
+                                        <td style="font-weight:600">${name}</td>
+                                        <td style="text-align:center; color:var(--primary-light)">${boysIndivRanks[name]}</td>
+                                        <td style="text-align:right">${data.boys.indiv}</td>
+                                        <td style="text-align:center; color:var(--accent-boy)">${boysRelayRanks[name]}</td>
+                                        <td style="text-align:right">${data.boys.relay}</td>
+                                        <td style="text-align:right; font-weight:700;">${data.boys.total}</td>
+                                    </tr>`}).join('')}
                             </tbody>
                         </table>
                     </div>
                     <div>
                         <div class="hytek-event-title"><span>Girls Zonal Ranking</span></div>
                         <table class="hytek-table">
-                            <thead><tr><th style="width:50px">Rank</th><th>Zone / Region</th><th style="text-align:right">Indiv</th><th style="text-align:right">Relay</th><th style="text-align:right">Total</th></tr></thead>
+                            <thead>
+                                <tr>
+                                    <th style="width:40px">Rank</th>
+                                    <th>Zone / Region</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Indiv<br>Rank</th>
+                                    <th style="text-align:right">Indiv</th>
+                                    <th style="text-align:center; width:40px; font-size:0.7rem;">Relay<br>Rank</th>
+                                    <th style="text-align:right">Relay</th>
+                                    <th style="text-align:right">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                ${sortedGirls.map(([name, data], i) => `<tr><td>${i+1}</td><td style="font-weight:600">${name}</td><td style="text-align:right">${data.girls.indiv}</td><td style="text-align:right">${data.girls.relay}</td><td style="text-align:right; font-weight:700;">${data.girls.total}</td></tr>`).join('')}
-                                ${sortedGirls.length === 0 ? '<tr><td colspan="5" style="text-align:center">No points recorded</td></tr>' : ''}
+                                ${girlsRanked.sorted.map(([name, data], i) => {
+                                    const totalRank = data.girls.total > 0 ? (i+1) : '-';
+                                    return `<tr>
+                                        <td style="text-align:center; font-weight:700;">${totalRank}</td>
+                                        <td style="font-weight:600">${name}</td>
+                                        <td style="text-align:center; color:var(--accent-girl)">${girlsIndivRanks[name]}</td>
+                                        <td style="text-align:right">${data.girls.indiv}</td>
+                                        <td style="text-align:center; color:var(--primary-light)">${girlsRelayRanks[name]}</td>
+                                        <td style="text-align:right">${data.girls.relay}</td>
+                                        <td style="text-align:right; font-weight:700;">${data.girls.total}</td>
+                                    </tr>`}).join('')}
                             </tbody>
                         </table>
                     </div>
@@ -2290,9 +2414,10 @@
                     <thead><tr><th style="width:50px">Rank</th><th>Zone / Region</th><th style="text-align:right">Indiv Total</th><th style="text-align:right">Relay Total</th><th style="text-align:right">Grand Total</th></tr></thead>
                     <tbody>`;
             
-            sortedTotal.forEach(([name, data], i) => {
+            totalRanked.sorted.forEach(([name, data], i) => {
+                const totalRank = data.total.total > 0 ? (i+1) : '-';
                 html += `<tr>
-                    <td>${i + 1}</td>
+                    <td style="text-align:center; font-weight:700;">${totalRank}</td>
                     <td style="font-weight:600">${name}</td>
                     <td style="text-align:right">${data.total.indiv}</td>
                     <td style="text-align:right">${data.total.relay}</td>
