@@ -1199,6 +1199,17 @@
                         if (!state.schools) state.schools = [];
                         if (!state.swimmers) state.swimmers = [];
                         if (!state.events) state.events = [];
+                        if (!state.settings) state.settings = { 
+                            meetName: "Meet 2026", 
+                            lanes: 8, 
+                            meetType: 'swimming',
+                            teamLabel: 'School',
+                            points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] },
+                            marathonBonus: [20, 15, 10, 5],
+                            username: 'admin',
+                            password: 'aqua@2026'
+                        };
+                        if (!state.settings.points) state.settings.points = { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] };
                     } else {
                         // Migrate from LocalStorage if exists
                         const oldData = localStorage.getItem('aqua_db');
@@ -2214,8 +2225,6 @@
             }
             
             calculateStandings();
-            saveData(); showToast("Results Saved Successfully");
-        }
             saveData(); showToast("Results Saved Successfully");
         }
 
