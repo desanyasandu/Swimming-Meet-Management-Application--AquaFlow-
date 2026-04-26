@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AquaFlow | Swimming Meet Management</title>
+    <title>AquaFlow Pro | Meet Management System</title>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -455,8 +455,8 @@
                 <ion-icon name="water"></ion-icon>
             </div>
             <div class="login-header">
-                <h2>AquaFlow Login</h2>
-                <p>Please enter your credentials to access the meet management system.</p>
+                <h2>AquaFlow Pro</h2>
+                <p>Swimming & Athletics Meet Management System</p>
             </div>
             <div class="login-form">
                 <div class="form-group">
@@ -469,7 +469,7 @@
                 </div>
                 <button class="login-btn" onclick="handleLogin()">Sign In</button>
             </div>
-            <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-dim);">AquaFlow v2.4 | Secure Management</p>
+            <p style="margin-top: 2rem; font-size: 0.85rem; color: var(--text-dim);">AquaFlow Pro v3.0 | Swimming & Athletics</p>
         </div>
     </div>
 
@@ -503,7 +503,7 @@
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="showPage('swimmers')">
-                    <ion-icon name="people-outline"></ion-icon> Swimmer Entry
+                    <ion-icon name="people-outline"></ion-icon> Athlete Entry
                 </a>
             </li>
             <li class="nav-item">
@@ -630,14 +630,29 @@
                             <input type="text" id="set-meet-date" placeholder="2026/03/21 - 2026/03/24">
                         </div>
                         <div class="form-group">
-                            <label>Location / Pool</label>
-                            <input type="text" id="set-meet-place" placeholder="D.S. Senanayake National School Pool">
+                            <label>Location / Venue</label>
+                            <input type="text" id="set-meet-place" placeholder="Ex: Sugathadasa Stadium / School Pool">
                         </div>
                         <div class="form-group">
                             <label>Number of Lanes</label>
                             <select id="set-meet-lanes">
                                 <option value="6">6 Lanes</option>
                                 <option value="8" selected>8 Lanes</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Meet Type</label>
+                            <select id="set-meet-type">
+                                <option value="swimming">Swimming Meet</option>
+                                <option value="athletics">Athletics Meet (Track & Field)</option>
+                                <option value="combined">Combined (Swimming + Athletics)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Team Label</label>
+                            <select id="set-team-label">
+                                <option value="School">School</option>
+                                <option value="House">House</option>
                             </select>
                         </div>
                     </div>
@@ -654,6 +669,14 @@
                             <label>Admin Password</label>
                             <input type="password" id="set-admin-pass" placeholder="••••••••">
                         </div>
+                    </div>
+                    <h3 style="margin-top:1.5rem;">Marathon Bonus Points</h3>
+                    <p style="font-size:0.75rem; color:var(--text-dim); margin:5px 0 10px;">Team bonus points awarded based on marathon placement</p>
+                    <div class="grid" style="grid-template-columns: repeat(2, 1fr);">
+                        <div class="form-group"> <label>1st Team</label><input type="number" class="point-input" id="pts-m-1" value="20"></div>
+                        <div class="form-group"> <label>2nd Team</label><input type="number" class="point-input" id="pts-m-2" value="15"></div>
+                        <div class="form-group"> <label>3rd Team</label><input type="number" class="point-input" id="pts-m-3" value="10"></div>
+                        <div class="form-group"> <label>4th Team</label><input type="number" class="point-input" id="pts-m-4" value="5"></div>
                     </div>
                 </div>
 
@@ -788,11 +811,12 @@
                 <p>Official Schedule of Events</p>
             </div>
             <div class="card">
-                <div class="grid no-print" style="grid-template-columns: 1fr 1fr 1fr 2fr auto auto; align-items: flex-end; gap: 10px;">
+                <div class="grid no-print" style="grid-template-columns: 1fr 1fr 1fr 1fr 2fr auto auto; align-items: flex-end; gap: 10px;">
                     <div class="form-group" style="margin:0"><label>No</label><input type="number" id="ev-no" placeholder="No"></div>
                     <div class="form-group" style="margin:0"><label>Gender</label><select id="ev-gender"><option>Boys</option><option>Girls</option></select></div>
                     <div class="form-group" style="margin:0"><label>Age</label><select id="ev-age"><option>Under 12</option><option>Under 14</option><option>Under 16</option><option>Under 18</option><option>Under 20</option></select></div>
-                    <div class="form-group" style="margin:0"><label>Event Name</label><input type="text" id="ev-name" placeholder="Event Name"></div>
+                    <div class="form-group" style="margin:0"><label>Category</label><select id="ev-category"><option value="swimming">Swimming</option><option value="track">Track (Running)</option><option value="field">Field Event</option></select></div>
+                    <div class="form-group" style="margin:0"><label>Event Name</label><input type="text" id="ev-name" placeholder="e.g. 100m Free / 100m Sprint / Long Jump"></div>
                     <button class="btn btn-primary" id="btn-ev-save" onclick="addEvent()">Add</button>
                     <button class="btn btn-secondary" onclick="clearEventForm()">Clear</button>
                 </div>
@@ -824,14 +848,14 @@
                     </div>
                 </div>
                 <div class="table-responsive" style="margin-top:1.5rem;">
-                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Name</th><th style="width:100px;" class="no-print">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
+                    <table><thead><tr><th>No</th><th>Gender</th><th>Group</th><th>Category</th><th>Name</th><th style="width:100px;" class="no-print">Action</th></tr></thead><tbody id="event-table-body"></tbody></table>
                 </div>
             </div>
         </div>
 
         <!-- SWIMMER ENTRY -->
         <div id="swimmers" class="content-container">
-            <header><div><h1>Swimmer Entry</h1></div></header>
+            <header><div><h1>Athlete Entry</h1></div></header>
             <div class="card">
                 <h3>Personal Information</h3>
                 <div class="grid">
@@ -896,12 +920,17 @@
         <div id="results" class="content-container section">
             <div class="header"><h1>Result Entry</h1></div>
             <div class="card">
-                <div class="grid">
-                    <div class="form-group" style="flex:1;">
+                <div class="grid" style="grid-template-columns: 2fr 1fr; align-items: center;">
+                    <div class="form-group" style="margin:0;">
                         <label>Select Event</label>
                         <select id="result-event-jump" onchange="renderResultEntry(this.value)">
                             <option value="">Select Event</option>
                         </select>
+                    </div>
+                    <div style="display:flex; gap:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid var(--glass-border); align-items:center;">
+                        <span style="font-weight:600; font-size:0.9rem;">Type:</span>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:0.9rem; color:white;"><input type="radio" name="res-type" id="res-is-final" value="final" checked style="width:16px; height:16px;"> Final</label>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:0.9rem; color:white;"><input type="radio" name="res-type" id="res-is-heat" value="heat" style="width:16px; height:16px;"> Heat</label>
                     </div>
                 </div>
                 <div id="result-entry-area" style="margin-top:1.5rem;"></div>
@@ -918,6 +947,11 @@
                         <select id="report-event-jump" onchange="renderResultsReport(this.value)">
                             <option value="">Select Event</option>
                         </select>
+                    </div>
+                    <div style="display:flex; gap:15px; background:rgba(255,255,255,0.05); padding:10px; border-radius:12px; border:1px solid var(--glass-border); align-items:center; margin-bottom:1.25rem;">
+                        <span style="font-weight:600; font-size:0.9rem;">Show As:</span>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:0.9rem; color:white;"><input type="radio" name="rep-type" id="rep-is-final" value="final" checked onchange="renderResultsReport(document.getElementById('report-event-jump').value)" style="width:16px; height:16px;"> Final</label>
+                        <label style="display:flex; align-items:center; gap:5px; cursor:pointer; font-size:0.9rem; color:white;"><input type="radio" name="rep-type" id="rep-is-heat" value="heat" onchange="renderResultsReport(document.getElementById('report-event-jump').value)" style="width:16px; height:16px;"> Heat</label>
                     </div>
                     <div style="display:flex; gap:10px; flex-wrap:wrap;">
                         <button class="btn btn-primary" onclick="renderSwimmerMasterList()"><ion-icon name="people-outline"></ion-icon> Master List</button>
@@ -1009,12 +1043,57 @@
             settings: { 
                 meetName: "Meet 2026", 
                 lanes: 8, 
+                meetType: 'swimming',
+                teamLabel: 'School',
                 points: { indiv:[10,7,5,4,3,2,1,0], relay:[20,14,10,8,6,4,2,0] },
+                marathonBonus: [20, 15, 10, 5],
                 username: 'admin',
                 password: 'aqua@2026'
             },
             schools: [], events: [], swimmers: [], results: {}, records: {}
         };
+
+        // Helper: Determine if an event is a field event (distance-based, highest wins)
+        function isFieldEvent(ev) {
+            if (!ev) return false;
+            if (ev.category === 'field') return true;
+            // Auto-detect from name if category not set
+            const fieldNames = ['long jump', 'triple jump', 'high jump', 'pole vault', 'poltvalt', 'shot put', 'shotput', 'discus', 'javelin', 'javeling', 'hammer'];
+            const n = (ev.name || '').toLowerCase();
+            return fieldNames.some(f => n.includes(f));
+        }
+
+        // Helper: Determine if an event is a marathon
+        function isMarathonEvent(ev) {
+            if (!ev) return false;
+            const n = (ev.name || '').toLowerCase();
+            return n.includes('marathon');
+        }
+
+        // Helper: Determine event category
+        function getEventCategory(ev) {
+            if (!ev) return 'swimming';
+            if (ev.category) return ev.category;
+            if (isFieldEvent(ev)) return 'field';
+            const trackNames = ['60m', '80m', '100m', '110m', '200m', '300m', '400m', '800m', '1500m', '2000m', '3000m', '5000m', '10000m', 'marathon', 'hurdle', 'steeple', 'sprint', 'dash', 'run'];
+            const n = (ev.name || '').toLowerCase();
+            if (trackNames.some(f => n.includes(f))) return 'track';
+            return 'swimming';
+        }
+
+        // Helper: Get category display label
+        function getCategoryBadge(cat) {
+            const colors = { swimming: '#0ea5e9', track: '#f59e0b', field: '#22c55e' };
+            const labels = { swimming: '🏊 Swim', track: '🏃 Track', field: '🏅 Field' };
+            const c = colors[cat] || '#6366f1';
+            const l = labels[cat] || cat;
+            return `<span style="background:${c}20; color:${c}; padding:2px 8px; border-radius:6px; font-size:0.75rem; font-weight:600; border:1px solid ${c}40;">${l}</span>`;
+        }
+
+        // Helper: Get team label text
+        function getTeamLabel() {
+            return state.settings.teamLabel || 'School';
+        }
 
         function showPage(id) {
             document.querySelectorAll('.content-container').forEach(c => c.classList.remove('active'));
@@ -1248,10 +1327,21 @@
             }
         }
         async function addEvent() {
-            const no = parseInt(document.getElementById('ev-no').value), g = document.getElementById('ev-gender').value, a = document.getElementById('ev-age').value, n = document.getElementById('ev-name').value;
+            const no = parseInt(document.getElementById('ev-no').value), 
+                  g = document.getElementById('ev-gender').value, 
+                  a = document.getElementById('ev-age').value, 
+                  cat = document.getElementById('ev-category').value,
+                  n = document.getElementById('ev-name').value;
             if(!no || !n) return;
             
-            const evData = { no, gender:g, age:a, name:n, type: n.toLowerCase().includes('relay') ? 'relay' : 'indiv' };
+            const evData = { 
+                no, 
+                gender: g, 
+                age: a, 
+                category: cat,
+                name: n, 
+                type: n.toLowerCase().includes('relay') ? 'relay' : 'indiv' 
+            };
             
             // Duplicate Check (by Number)
             const existingIdx = state.events.findIndex(e => e.no === no);
@@ -1261,6 +1351,11 @@
                 } else { return; }
             } else {
                 state.events.push(evData);
+            }
+
+            // Sync category to existing results if any
+            if (state.results[no]) {
+                // Category change might affect point calculation if it was marathon
             }
 
             // Save records if provided
@@ -1355,6 +1450,7 @@
         function clearEventForm() {
             updateNextEventNumber();
             document.getElementById('ev-name').value = "";
+            document.getElementById('ev-category').value = "swimming";
             document.getElementById('btn-ev-save').innerText = "Add";
             ['rec-meet-t','rec-meet-h','rec-meet-y','rec-prov-t','rec-prov-h','rec-prov-y','rec-nat-t','rec-nat-h','rec-nat-y'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1368,6 +1464,7 @@
                     <td>${e.no}</td>
                     <td>${e.gender}</td>
                     <td>${e.age}</td>
+                    <td>${getCategoryBadge(getEventCategory(e))}</td>
                     <td>${e.name}</td>
                     <td class="no-print">
                         <div style="display:flex; gap:5px;">
@@ -1387,6 +1484,7 @@
             document.getElementById('ev-no').value = e.no;
             document.getElementById('ev-gender').value = e.gender;
             document.getElementById('ev-age').value = e.age;
+            document.getElementById('ev-category').value = e.category || getEventCategory(e);
             document.getElementById('ev-name').value = e.name;
             document.getElementById('btn-ev-save').innerText = "Update";
         }
@@ -1704,18 +1802,19 @@
             const ev = state.events.find(e=>e.no===no);
             if(!ev) return "";
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
+            const isField = isFieldEvent(ev);
             
             const rec = state.records ? state.records[no] : null;
             const provRec = rec && rec.provincial ? rec.provincial : null;
             const natRec = rec && rec.national ? rec.national : null;
 
-            // HY-TEK Style Lane Seeding
+            // HY-TEK Style Lane Seeding (Always use for Track and Field as requested)
             let sorted = swimmers.sort((a,b) => {
                 const getT = x => {
                     const found = x.evs.find(z => z.no === no);
-                    return found ? tToSec(found.t) : 999999;
+                    return found ? tToSec(found.t) : (isField ? 0 : 999999);
                 };
-                return getT(a) - getT(b);
+                return isField ? (getT(b) - getT(a)) : (getT(a) - getT(b));
             });
             
             const laneConfig = state.settings.lanes == 8 ? [4,5,3,6,2,7,1,8] : [3,4,2,5,1,6];
@@ -1730,21 +1829,21 @@
 
                     <div class="hytek-event-title printable" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px;">
                         <span>Event ${ev.no} &nbsp;&nbsp;&nbsp; ${ev.gender} ${ev.age} ${ev.name}</span>
-                        <span>Finals</span>
+                        <span>${isField ? 'Finals' : 'Heats/Finals'}</span>
                     </div>
 
                     <div style="font-size: 0.75rem; padding: 2px 5px; border: 1px solid black; border-top: none; color: black; margin-bottom: 10px;">
-                        <p style="margin: 1px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
-                        <p style="margin: 1px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
+                        <p style="margin: 1px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t}${isField?'m':''} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
+                        <p style="margin: 1px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t}${isField?'m':''} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
                     </div>
             `;
 
             if(sorted.length === 0) {
-                html += `<div style="text-align:center; padding: 20px; color: var(--text-dim);">No swimmers currently registered for this event.</div></div>`;
+                html += `<div style="text-align:center; padding: 20px; color: var(--text-dim);">No athletes currently registered for this event.</div></div>`;
                 return html;
             }
 
-            // Distribute swimmers into heats (Slowest to Fastest)
+            // Distribute into heats
             let rawHeats = [];
             let swimmersCopy = [...sorted];
             while (swimmersCopy.length > chunk) rawHeats.push(swimmersCopy.splice(0, chunk));
@@ -1756,9 +1855,9 @@
                 let laneData = {};
                 heatList.forEach((sw, i) => laneData[laneConfig[i]] = sw);
 
-                html += `<div class="hytek-heat-label" style="font-weight: bold; margin-top: 10px;">Heat ${h} of ${rawHeats.length} Finals</div>
+                html += `<div class="hytek-heat-label" style="font-weight: bold; margin-top: 10px;">Heat ${h} of ${rawHeats.length}</div>
                 <table class="hytek-table">
-                    <thead><tr><th style="width:50px; text-align: center;">Lane</th><th>Name</th><th style="width:50px; text-align: center;">Age</th><th>Team</th><th style="width:100px; text-align:right;">Seed Time</th></tr></thead>
+                    <thead><tr><th style="width:50px; text-align: center;">Lane</th><th>Name</th><th style="width:50px; text-align: center;">Age</th><th>Team</th><th style="width:100px; text-align:right;">Seed ${isField ? 'Dist' : 'Time'}</th></tr></thead>
                     <tbody>`;
                 
                 for(let l=1; l<=state.settings.lanes; l++) {
@@ -1770,7 +1869,7 @@
                         <td>${s ? s.short : ''}</td>
                         <td style="text-align: center;">${ageValue}</td>
                         <td>${s ? s.school : ''}</td>
-                        <td style="text-align:right;">${s ? (s.evs.find(x=>x.no===no).t || 'NT') : ''}</td>
+                        <td style="text-align:right;">${s ? (s.evs.find(x=>x.no===no).t + (isField?'m':'') || 'NT') : ''}</td>
                     </tr>`;
                 }
                 html += `</tbody></table>`;
@@ -1797,15 +1896,18 @@
         function generateResultHTML(no) {
             no = parseInt(no); if(!no) return "";
             const ev = state.events.find(e=>e.no===no);
+            const isField = isFieldEvent(ev);
             const results = state.results[no];
+            const isFinal = !document.getElementById('rep-is-heat') || !document.getElementById('rep-is-heat').checked;
+
             if(!results) return `<div class="hytek-event-block" style="margin-top:20px; page-break-after:always;">
                 <div class="hytek-event-title" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px; font-size: 1.1rem;">
                     <span>Event ${ev.no} &nbsp;&nbsp;&nbsp; ${ev.gender} ${ev.age} ${ev.name}</span>
+                    <span style="float:right">${isFinal ? 'Final' : 'Heats'}</span>
                 </div>
                 <div style="text-align:center; padding: 20px; color: var(--text-dim); border: 1px solid black; border-top:none;">No results recorded for this event.</div>
             </div>`;
 
-            const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
             let list = [];
             Object.keys(results).forEach(id => {
                 let sw = state.swimmers.find(x=>x.id==id);
@@ -1813,7 +1915,9 @@
                     list.push({ sw, t: results[id].t, s: tToSec(results[id].t) });
                 }
             });
-            list.sort((a,b) => a.s - b.s);
+            
+            // Sort: Highest for Field, Lowest for others
+            list.sort((a,b) => isField ? (b.s - a.s) : (a.s - b.s));
 
             const rec = state.records ? state.records[no] : null;
             const meetRec = rec && rec.meet ? rec.meet : null;
@@ -1823,49 +1927,60 @@
             let html = `
                 <div class="hytek-event-block" style="margin-top: 25px; page-break-after: always;">
                     <div class="report-header printable" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;">
-                        <h2 style="text-transform: uppercase; font-size: 1.4rem;">${state.settings.meetName}</h2>
-                        <p style="font-size: 1rem; margin-top: 5px;">At ${state.settings.meetPlace || 'Meet Venue'}, ${state.settings.meetDate || 'Meet Date'}</p>
+                        <h2 style="text-transform: uppercase; font-size: 1.4rem; text-align:center;">${state.settings.meetName}</h2>
+                        <p style="font-size: 1rem; margin-top: 5px; text-align:center;">At ${state.settings.meetPlace || 'Meet Venue'}, ${state.settings.meetDate || 'Meet Date'}</p>
+                        <h3 style="text-align:center; margin-top:10px;">Result Sheet</h3>
                     </div>
                     
-                    <div class="hytek-event-title" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px; font-size: 1.1rem;">
-                        <span>Event ${ev.no} &nbsp;&nbsp;&nbsp; ${ev.gender} ${ev.age} ${ev.name}</span>
+                    <div class="hytek-event-title" style="background: #e0e0e0; border: 1px solid black; color: black; padding: 4px 10px; margin-top: 5px; font-size: 1rem; display:flex; justify-content:space-between;">
+                        <span>Event No: ${ev.no}</span>
+                        <span>${ev.name}</span>
+                        <span>${ev.age}</span>
+                        <span>${ev.gender}</span>
+                    </div>
+
+                    <div style="display:flex; justify-content:center; gap:40px; border:1px solid black; border-top:none; padding:5px; font-weight:bold;">
+                        <span>Heats <span style="display:inline-block; width:15px; height:15px; border:1px solid black; border-radius:50%; vertical-align:middle; margin-left:5px; ${!isFinal ? 'background:black;' : ''}"></span></span>
+                        <span>Final <span style="display:inline-block; width:15px; height:15px; border:1px solid black; border-radius:50%; vertical-align:middle; margin-left:5px; ${isFinal ? 'background:black;' : ''}"></span></span>
                     </div>
 
                     <div style="font-size: 0.8rem; padding: 2px 5px; border: 1px solid black; border-top: none; color: black;">
-                        <p style="margin: 2px 0;"><strong>Meet Record:-</strong> ${meetRec ? `${meetRec.t} (${meetRec.yr}) ${meetRec.holder} - ${meetRec.school}` : 'No Record'}</p>
-                        <p style="margin: 2px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
-                        <p style="margin: 2px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
+                        <p style="margin: 2px 0;"><strong>Meet Record:-</strong> ${meetRec ? `${meetRec.t}${isField?'m':''} (${meetRec.yr}) ${meetRec.holder} - ${meetRec.school}` : 'No Record'}</p>
+                        <p style="margin: 2px 0;"><strong>Provincial Record:-</strong> ${provRec ? `${provRec.t}${isField?'m':''} (${provRec.yr}) ${provRec.holder} - ${provRec.school} ${provRec.zone ? '- ' + provRec.zone : ''}` : 'No Record'}</p>
+                        <p style="margin: 2px 0;"><strong>National School Record:-</strong> ${natRec ? `${natRec.t}${isField?'m':''} (${natRec.yr}) ${natRec.holder} - ${natRec.school}` : 'No Record'}</p>
                     </div>
 
                     <table class="hytek-table">
                         <thead>
                             <tr>
                                 <th style="width: 50px; text-align: center;">Place</th>
+                                <th style="width: 80px; text-align: center;">Comp. No</th>
                                 <th>Name</th>
-                                <th style="width: 50px; text-align: center;">Age</th>
-                                <th>School</th>
-                                <th style="text-align: right; width: 100px;">Time</th>
+                                <th>${getTeamLabel()}</th>
+                                <th>Zonal/Province</th>
+                                <th style="text-align: right; width: 100px;">Performance</th>
                             </tr>
                         </thead>
                         <tbody>
             `;
 
             list.forEach((r, i) => {
-                const birthYearMatch = r.sw.dob ? r.sw.dob.match(/\d{4}/) : null;
-                const ageValue = birthYearMatch ? (2026 - parseInt(birthYearMatch[0])) : '';
+                const sw = r.sw;
+                const zone = state.schools.find(sc => sc.name === sw.school)?.zone || "N/A";
                 
                 let markers = [];
-                if (meetRec && meetRec.t && r.s < tToSec(meetRec.t)) markers.push('MR');
-                if (provRec && provRec.t && r.s < tToSec(provRec.t)) markers.push('PR');
-                if (natRec && natRec.t && r.s < tToSec(natRec.t)) markers.push('NR');
+                if (meetRec && meetRec.t && (isField ? r.s > tToSec(meetRec.t) : r.s < tToSec(meetRec.t))) markers.push('MR');
+                if (provRec && provRec.t && (isField ? r.s > tToSec(provRec.t) : r.s < tToSec(provRec.t))) markers.push('PR');
+                if (natRec && natRec.t && (isField ? r.s > tToSec(natRec.t) : r.s < tToSec(natRec.t))) markers.push('NR');
 
                 html += `<tr>
-                    <td style="text-align: center;">${i+1}</td>
-                    <td style="font-weight: 600;">${r.sw.full}</td>
-                    <td style="text-align: center;">${ageValue}</td>
-                    <td>${r.sw.school}</td>
+                    <td style="text-align: center; font-weight:bold;">${i+1}</td>
+                    <td style="text-align: center;">${sw.idno || sw.admno || ''}</td>
+                    <td style="font-weight: 600;">${sw.full}</td>
+                    <td>${sw.school}</td>
+                    <td>${zone}</td>
                     <td style="text-align: right; font-weight: bold;">
-                        ${r.t} ${markers.length > 0 ? `<span style="color:red; margin-left:5px; font-size:0.75rem;">${markers.join(', ')}</span>` : ''}
+                        ${r.t}${isField?'m':''} ${markers.length > 0 ? `<span style="color:red; margin-left:5px; font-size:0.75rem;">${markers.join(', ')}</span>` : ''}
                     </td>
                 </tr>`;
             });
@@ -2013,16 +2128,18 @@
         }
         function renderResultEntry(no) {
             no = parseInt(no); if(!no) return;
+            const ev = state.events.find(e => e.no === no);
             const swimmers = state.swimmers.filter(s=>s.evs.some(x=>x.no===no));
             const existingResults = state.results[no] || {};
+            const isField = isFieldEvent(ev);
             
             // 1. Calculate Seeding Order (Lane order within each Heat)
             let sorted = swimmers.sort((a,b) => {
                 const getT = x => {
                     const found = x.evs.find(z => z.no === no);
-                    return found ? tToSec(found.t) : 999999;
+                    return found ? tToSec(found.t) : (isField ? 0 : 999999);
                 };
-                return getT(a) - getT(b);
+                return isField ? (getT(b) - getT(a)) : (getT(a) - getT(b));
             });
 
             let chunk = state.settings.lanes || 8;
@@ -2044,7 +2161,7 @@
             
             document.getElementById('result-entry-area').innerHTML = `
                 <table class="hytek-table">
-                    <thead><tr><th style="width:70px">Heat/Lane</th><th style="width:180px">Swimmer</th><th style="width:80px">Seed</th><th>Result Time</th></tr></thead>
+                    <thead><tr><th style="width:70px">Heat/Lane</th><th style="width:180px">Athlete</th><th style="width:80px">Seed</th><th>Result ${isField ? 'Distance (m)' : 'Time'}</th></tr></thead>
                     <tbody>
                         ${entryList.map(s => {
                             const seedInfo = s.evs.find(x => x.no === no);
@@ -2054,9 +2171,9 @@
                                 <td style="font-size:0.8rem; color:var(--text-dim)">H${s.h} L${s.l}</td>
                                 <td>${s.short}</td>
                                 <td style="color:var(--primary-light); font-weight:600;">${seedTime}</td>
-                                <td><input type="text" onfocus="this.select()" onblur="formatSeedTime(this)" 
+                                <td><input type="text" onfocus="this.select()" ${isField ? '' : 'onblur="formatSeedTime(this)"'} 
                                     onkeydown="if(event.key==='Enter'){event.preventDefault(); const tr=this.closest('tr').nextElementSibling; if(tr) tr.querySelector('input').focus();}" 
-                                    class="r-inp" data-id="${s.id}" value="${val}" placeholder="MM:SS.ms"></td>
+                                    class="r-inp" data-id="${s.id}" value="${val}" placeholder="${isField ? '0.00' : 'MM:SS.ms'}"></td>
                             </tr>`;
                         }).join('')}
                     </tbody>
@@ -2064,12 +2181,41 @@
                 <button class="btn btn-primary" style="margin-top:1rem;" onclick="calcRes(${no})">Calculate & Save Results</button>`;
         }
         function calcRes(no) {
-            const inps = document.querySelectorAll('.r-inp'); let rs = [];
+            const ev = state.events.find(e => e.no === no);
+            const isField = isFieldEvent(ev);
+            const isMarathon = isMarathonEvent(ev);
+            const isHeat = document.getElementById('res-is-heat') && document.getElementById('res-is-heat').checked;
+            
+            const inps = document.querySelectorAll('.r-inp'); 
+            let rs = [];
             inps.forEach(i => { if(i.value) rs.push({ id: i.dataset.id, t: i.value, s: tToSec(i.value) }); });
-            rs.sort((a,b)=>a.s-b.s); if(!state.results[no]) state.results[no] = {};
-            const ptArr = state.events.find(e=>e.no===no).type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
-            rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: (idx < ptArr.length) ? ptArr[idx] : 0 });
+            
+            // Sort: Descending for Field (higher is better), Ascending for others (lower is better)
+            rs.sort((a,b) => isField ? (b.s - a.s) : (a.s - b.s));
+            
+            if(!state.results[no]) state.results[no] = {};
+            const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
+            
+            if (isMarathon) {
+                // Marathon Scoring: Points = Participants - (Place - 1)
+                const totalParticipants = rs.length;
+                rs.forEach((r, idx) => {
+                    state.results[no][r.id] = { 
+                        t: r.t, 
+                        pts: totalParticipants - idx 
+                    };
+                });
+            } else if (!isHeat) {
+                // Award points only if it's NOT a heat (Final)
+                rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: (idx < ptArr.length) ? ptArr[idx] : 0 });
+            } else {
+                // If it IS a heat, save time but 0 points
+                rs.forEach((r,idx) => state.results[no][r.id] = { t: r.t, pts: 0 });
+            }
+            
             calculateStandings();
+            saveData(); showToast("Results Saved Successfully");
+        }
             saveData(); showToast("Results Saved Successfully");
         }
 
@@ -2080,15 +2226,18 @@
         }
         function calculateStandings() {
             let sPts = {}, schPts = {}, zonePts = {};
+            let marathonSchPts = {}; // Separate tracking for marathon team points
+            const teamLabel = getTeamLabel();
             
-            // Initialize schools and zones with detailed breakdown
+            // Initialize schools and zones
             state.schools.forEach(sch => {
                 schPts[sch.name] = { 
-                    boys: { indiv: 0, relay: 0, total: 0 },
-                    girls: { indiv: 0, relay: 0, total: 0 },
-                    total: { indiv: 0, relay: 0, total: 0 },
+                    boys: { indiv: 0, relay: 0, marathon: 0, total: 0 },
+                    girls: { indiv: 0, relay: 0, marathon: 0, total: 0 },
+                    total: { indiv: 0, relay: 0, marathon: 0, total: 0 },
                     zone: sch.zone || "No Zone" 
                 };
+                marathonSchPts[sch.name] = { boys: 0, girls: 0 };
                 if (sch.zone && !zonePts[sch.zone]) {
                     zonePts[sch.zone] = { 
                         boys: { indiv: 0, relay: 0, total: 0 },
@@ -2097,67 +2246,86 @@
                     };
                 }
             });
-            if (!zonePts["No Zone"]) zonePts["No Zone"] = { 
-                boys: { indiv: 0, relay: 0, total: 0 },
-                girls: { indiv: 0, relay: 0, total: 0 },
-                total: { indiv: 0, relay: 0, total: 0 }
-            };
 
-            // Initialize swimmers
-            state.swimmers.forEach(s => { 
-                const sid = String(s.id);
-                sPts[sid] = 0; 
-                if (!schPts[s.school]) {
-                    schPts[s.school] = { 
-                        boys: { indiv: 0, relay: 0, total: 0 },
-                        girls: { indiv: 0, relay: 0, total: 0 },
-                        total: { indiv: 0, relay: 0, total: 0 },
-                        zone: "No Zone" 
-                    };
-                }
-            });
-
+            // Process Event Results
             Object.keys(state.results).forEach(no => {
                 const ev = state.events.find(e => e.no == no);
                 if (!ev) return;
                 
                 const results = state.results[no];
-                const ptArr = ev.type === 'relay' ? state.settings.points.relay : state.settings.points.indiv;
+                const isField = isFieldEvent(ev);
+                const isMarathon = isMarathonEvent(ev);
                 const isRelay = ev.type === 'relay';
+                const ptArr = isRelay ? state.settings.points.relay : state.settings.points.indiv;
                 
                 let eventList = [];
                 Object.keys(results).forEach(id => {
                     if (results[id].t && results[id].t !== '-') {
-                        eventList.push({ id, s: tToSec(results[id].t) });
+                        eventList.push({ id, s: tToSec(results[id].t), pts: results[id].pts || 0 });
                     }
                 });
-                eventList.sort((a, b) => a.s - b.s);
+                
+                // Sort: Highest for Field, Lowest for others
+                eventList.sort((a, b) => isField ? (b.s - a.s) : (a.s - b.s));
                 
                 eventList.forEach((r, idx) => {
-                    let pts = (idx < ptArr.length) ? ptArr[idx] : 0;
-                    if (pts <= 0) return;
-                    
                     const sid = String(r.id);
-                    if (sPts[sid] !== undefined) sPts[sid] += pts;
-                    
                     let sw = state.swimmers.find(x => x.id == r.id);
-                    if (sw) {
-                        const swGender = String(sw.gender || "").toLowerCase().trim();
-                        const genderKey = (swGender === 'boys' || swGender === 'male' || swGender === 'm') ? 'boys' : 'girls';
-                        const typeKey = isRelay ? 'relay' : 'indiv';
+                    if (!sw) return;
 
-                        // Update School Points
+                    const swGender = String(sw.gender || "").toLowerCase().trim();
+                    const genderKey = (swGender === 'boys' || swGender === 'male' || swGender === 'm') ? 'boys' : 'girls';
+
+                    if (isMarathon) {
+                        // Marathon points go to team-only ranking
+                        marathonSchPts[sw.school][genderKey] += r.pts;
+                    } else {
+                        // Regular points
+                        let pts = r.pts;
+                        if (pts <= 0) return;
+
+                        if (!sPts[sid]) sPts[sid] = 0;
+                        sPts[sid] += pts;
+
+                        const typeKey = isRelay ? 'relay' : 'indiv';
+                        if (!schPts[sw.school]) {
+                            schPts[sw.school] = { boys: {indiv:0, relay:0, total:0}, girls: {indiv:0, relay:0, total:0}, total: {indiv:0, relay:0, total:0}, zone: "No Zone" };
+                        }
                         schPts[sw.school][genderKey][typeKey] += pts;
                         schPts[sw.school][genderKey].total += pts;
                         schPts[sw.school].total[typeKey] += pts;
                         schPts[sw.school].total.total += pts;
                         
-                        // Update Zone Points
                         const zone = schPts[sw.school].zone || "No Zone";
-                        zonePts[zone][genderKey][typeKey] += pts;
-                        zonePts[zone][genderKey].total += pts;
-                        zonePts[zone].total[typeKey] += pts;
-                        zonePts[zone].total.total += pts;
+                        if (zonePts[zone]) {
+                            zonePts[zone][genderKey][typeKey] += pts;
+                            zonePts[zone][genderKey].total += pts;
+                            zonePts[zone].total[typeKey] += pts;
+                            zonePts[zone].total.total += pts;
+                        }
+                    }
+                });
+            });
+
+            // Calculate Marathon Bonus Points
+            const bonusPtsArr = state.settings.marathonBonus || [20, 15, 10, 5];
+            ['boys', 'girls'].forEach(genderKey => {
+                const marathonRanking = Object.entries(marathonSchPts)
+                    .filter(([name, data]) => data[genderKey] > 0)
+                    .sort((a, b) => b[1][genderKey] - a[1][genderKey]);
+                
+                marathonRanking.forEach(([schName, data], idx) => {
+                    if (idx < bonusPtsArr.length) {
+                        const bonus = bonusPtsArr[idx];
+                        schPts[schName][genderKey].marathon = bonus;
+                        schPts[schName][genderKey].total += bonus;
+                        schPts[schName].total.total += bonus;
+                        
+                        const zone = schPts[schName].zone || "No Zone";
+                        if (zonePts[zone]) {
+                            zonePts[zone][genderKey].total += bonus;
+                            zonePts[zone].total.total += bonus;
+                        }
                     }
                 });
             });
@@ -2730,8 +2898,16 @@
             document.getElementById('set-meet-date').value = state.settings.meetDate || "";
             document.getElementById('set-meet-place').value = state.settings.meetPlace || "";
             document.getElementById('set-meet-lanes').value = state.settings.lanes || 8;
+            document.getElementById('set-meet-type').value = state.settings.meetType || "swimming";
+            document.getElementById('set-team-label').value = state.settings.teamLabel || "School";
             document.getElementById('set-admin-user').value = state.settings.username || "admin";
             document.getElementById('set-admin-pass').value = state.settings.password || "aqua@2026";
+            
+            const marathonBonus = state.settings.marathonBonus || [20,15,10,5];
+            marathonBonus.forEach((p, i) => {
+                const el = document.getElementById(`pts-m-${i+1}`);
+                if(el) el.value = p;
+            });
             
             if (state.settings.points) {
                 const ptsI = state.settings.points.indiv || [10,7,5,4,3,2,1,0];
@@ -2753,6 +2929,8 @@
             state.settings.meetDate = document.getElementById('set-meet-date').value;
             state.settings.meetPlace = document.getElementById('set-meet-place').value;
             state.settings.lanes = parseInt(document.getElementById('set-meet-lanes').value);
+            state.settings.meetType = document.getElementById('set-meet-type').value;
+            state.settings.teamLabel = document.getElementById('set-team-label').value;
             state.settings.username = document.getElementById('set-admin-user').value;
             state.settings.password = document.getElementById('set-admin-pass').value;
             
@@ -2761,6 +2939,9 @@
             
             state.settings.points.relay = [];
             for(let i=1; i<=8; i++) state.settings.points.relay.push(parseInt(document.getElementById(`pts-r-${i}`).value) || 0);
+
+            state.settings.marathonBonus = [];
+            for(let i=1; i<=4; i++) state.settings.marathonBonus.push(parseInt(document.getElementById(`pts-m-${i}`).value) || 0);
 
             saveData(); showToast("Settings Saved");
         }
